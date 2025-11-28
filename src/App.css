@@ -201,4 +201,5 @@ textarea:focus {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
+  color: white;
 }
