@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import "./App.css";
 import "./theme.css";
+import "./App.css";
 
 const API_URL = "https://chatppt-backend.onrender.com/api/chat/";
 const LOCAL_KEY = "chatppt_chats_v1";
@@ -11,46 +11,30 @@ export default function App() {
   const [input, setInput] = useState("");
   const [imageBase64, setImageBase64] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [theme, setTheme] = useState("dark");
-  const [typingMessage, setTypingMessage] = useState("");
+  const [typing, setTyping] = useState(false);
+  const [typingText, setTypingText] = useState("");
   const chatEndRef = useRef(null);
 
-
-  useEffect(() => {
-  document.documentElement.setAttribute("data-theme", theme);
-}, [theme]);
-
-  /* Load saved chat */
+  /* Load stored chat */
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
   }, []);
-
   useEffect(() => {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
   }, [messages]);
 
-  /* Scroll to bottom */
+  /* Scroll bottom */
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typingMessage]);
+  }, [messages, typingText]);
 
-  /* Auto resize textbox */
-  useEffect(() => {
-    const textarea = document.getElementById("chatbox");
-    if (textarea) {
-      textarea.style.height = "auto";
-      textarea.style.height = textarea.scrollHeight + "px";
-    }
-  }, [input]);
+  /* Time format */
+  const timeNow = () =>
+    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  const timeNow = () => {
-    const d = new Date();
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
-  const sendMessage = async () => {
+  /* Send message */
+  const send = async () => {
     if (!input && !imageBase64) return;
 
     const newMsg = {
@@ -64,7 +48,6 @@ export default function App() {
     setInput("");
     setImagePreview(null);
     setImageBase64(null);
-    setLoading(true);
 
     try {
       const res = await axios.post(API_URL, {
@@ -73,70 +56,66 @@ export default function App() {
         image_base64: newMsg.image,
       });
 
-      typeBotMessage(res.data.answer);
+      typeBot(res.data.answer);
     } catch {
-      typeBotMessage("⚠ System error. Backend went out for chai.");
+      typeBot("⚠ Unexpected system crash. Backend went for chai.");
     }
   };
 
-  /* Typewriter effect */
-  const typeBotMessage = (text) => {
-    setLoading(false);
-    setTypingMessage("");
+  /* Letter-by-letter typing */
+  const typeBot = (text) => {
+    setTyping(true);
+    setTypingText("");
     let i = 0;
-
     const interval = setInterval(() => {
-      setTypingMessage((prev) => prev + text.charAt(i));
+      setTypingText((prev) => prev + text.charAt(i));
       i++;
       if (i === text.length) {
         clearInterval(interval);
+        setTyping(false);
+        setTypingText("");
         setMessages((prev) => [
           ...prev,
           { role: "assistant", content: text, time: timeNow() },
         ]);
-        setTypingMessage("");
       }
-    }, 18); // typing speed
+    }, 20);
   };
 
   /* Upload image */
-  const handleUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result.split(",")[1];
-      setImageBase64(base64);
-      setImagePreview(reader.result);
+  const upload = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      setImageBase64(r.result.split(",")[1]);
+      setImagePreview(r.result);
     };
-    reader.readAsDataURL(file);
+    r.readAsDataURL(f);
   };
 
-  /* Toggle theme */
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    document.documentElement.setAttribute("data-theme", next);
+  /* Toggle clicked */
+  const toggleClicked = () => {
+    alert("⚠ It is under construction… don’t play with this 😑");
   };
 
   return (
     <div className="app">
-      {/* HEADER */}
       <header className="header">
-        <div className="title">ChatPPT 💥n hhbhhb</div>
-        <div className="theme-switch">
+        <div className="title">ChatPPT ✨ n hhhhhb</div>
+        <div onClick={toggleClicked} className="theme-switch">
           <label className="switch">
-            <input type="checkbox" onChange={toggleTheme} />
+            <input type="checkbox" />
             <span className="slider"></span>
           </label>
         </div>
       </header>
+
       <p className="feature-note">⚠ Under construction… don’t play with this 😑</p>
 
-      {/* CHAT BOX */}
       <div className="chat">
-        {messages.map((m, idx) => (
-          <div key={idx} className={`msg-row ${m.role}`}>
+        {messages.map((m, i) => (
+          <div key={i} className={`msg-row ${m.role}`}>
             <img
               className="avatar"
               src={
@@ -145,47 +124,33 @@ export default function App() {
                   : "https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
               }
             />
-
             <div className="bubble">
-              <div className="text">{m.content}</div>
+              {m.content}
               {m.image && <img src={`data:image/png;base64,${m.image}`} className="chat-img" />}
               <div className="time">{m.time}</div>
             </div>
           </div>
         ))}
 
-        {/* typing animation */}
-        {typingMessage && (
+        {/* live typing bubble */}
+        {typing && (
           <div className="msg-row assistant">
             <img
               className="avatar"
               src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
             />
-            <div className="bubble typing">{typingMessage}</div>
+            <div className="bubble">{typingText}</div>
           </div>
         )}
 
-        {loading && !typingMessage && (
-          <div className="msg-row assistant">
-            <img
-              className="avatar"
-              src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
-            />
-            <div className="typing-dots">
-              <span></span><span></span><span></span>
-            </div>
-          </div>
-        )}
-
-        <div ref={chatEndRef}></div>
+        <div ref={chatEndRef} />
       </div>
 
-      {/* INPUT AREA */}
       <div className="input-area">
         {imagePreview && <img src={imagePreview} className="preview" />}
         <label className="upload-btn">
           📎
-          <input type="file" accept="image/*" onChange={handleUpload} />
+          <input type="file" accept="image/*" onChange={upload} />
         </label>
 
         <textarea
@@ -193,14 +158,11 @@ export default function App() {
           placeholder="Message…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
         />
 
-        <button className="send" onClick={sendMessage} disabled={loading}>
-          ➤
-        </button>
+        <button className="send" onClick={send}>➤</button>
       </div>
     </div>
   );
 }
-//dd
