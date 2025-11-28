@@ -66,8 +66,11 @@ export default function App() {
       });
       typeBotMessage(res.data.answer);
     } catch {
-      typeBotMessage("⚠ Backend went out for chai.");
-    }
+  typeBotMessage("⚠ Server slow — retrying… please wait…");
+setTimeout(() => setTypingMessage(""), 1500);
+
+}
+
   };
 
   /* Typewriter */
