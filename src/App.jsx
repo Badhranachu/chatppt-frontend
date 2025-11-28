@@ -3,6 +3,7 @@ import axios from "axios";
 
 const LOCAL_KEY = "chatppt_chats_v1";
 const API_URL = "https://chatppt-backend.onrender.com/api/chat/";
+const MIN_TYPING_MS = 700; // minimum time to show typing animation
 
 function App() {
   const [messages, setMessages] = useState([]);
@@ -18,25 +19,26 @@ function App() {
     if (saved) setMessages(JSON.parse(saved));
   }, []);
 
-  // Auto save chat
+  // Auto-save + scroll
   useEffect(() => {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, [messages]);
 
   const handleSend = async () => {
     if (!userInput && !imageBase64) return;
+
+    const timestamp = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
     const newUserMessage = {
       id: Date.now().toString(),
       role: "user",
       content: userInput || "(Image)",
       image: imageBase64 || null,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      time: timestamp,
     };
 
     setMessages((prev) => [...prev, newUserMessage]);
@@ -47,6 +49,19 @@ function App() {
       .slice(-12)
       .map((m) => `${m.role}: ${m.content}`)
       .join("\n");
+
+    const startedAt = Date.now();
+
+    const finishLoading = (callback) => {
+      const elapsed = Date.now() - startedAt;
+      const delay = Math.max(0, MIN_TYPING_MS - elapsed);
+      setTimeout(() => {
+        callback?.();
+        setIsLoading(false);
+        setImageBase64(null);
+        setImagePreview(null);
+      }, delay);
+    };
 
     try {
       const res = await axios.post(
@@ -63,24 +78,30 @@ function App() {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: res.data.answer,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
       };
 
-      setMessages((prev) => [...prev, botMessage]);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: "err",
-          role: "assistant",
-          content: "⚠ Something went wrong. Try again.",
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        },
-      ]);
-    } finally {
-      setIsLoading(false);
-      setImageBase64(null);
-      setImagePreview(null);
+      finishLoading(() => {
+        setMessages((prev) => [...prev, botMessage]);
+      });
+    } catch (err) {
+      finishLoading(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: "err",
+            role: "assistant",
+            content: "⚠ Something went wrong. Try again.",
+            time: new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          },
+        ]);
+      });
     }
   };
 
@@ -112,7 +133,9 @@ function App() {
       <aside className="sidebar">
         <h1 className="brand">ChatPPT</h1>
         <p className="subtitle">Smart AI Chat Assistant</p>
-        <button className="btn" onClick={clearChat}>🧹 Clear Chat</button>
+        <button className="btn" onClick={clearChat}>
+          🧹 Clear Chat
+        </button>
       </aside>
 
       <main className="chat-container">
@@ -124,7 +147,7 @@ function App() {
           {messages.length === 0 && (
             <div className="empty-state">
               <h3>Start a conversation</h3>
-              <p>Ask anything. Always get confident answers.</p>
+              <p>Ask anything. You’ll get a brutally honest answer.</p>
             </div>
           )}
 
@@ -145,7 +168,9 @@ function App() {
                 )}
 
                 {msg.content.split("\n\n").map((para, idx) => (
-                  <p key={idx} className="message-para">{para}</p>
+                  <p key={idx} className="message-para">
+                    {para}
+                  </p>
                 ))}
 
                 <div className="message-time">{msg.time}</div>
@@ -156,7 +181,9 @@ function App() {
           {isLoading && (
             <div className="message-row message-assistant">
               <div className="typing-bubble">
-                <span></span><span></span><span></span>
+                <span></span>
+                <span></span>
+                <span></span>
               </div>
             </div>
           )}
@@ -167,7 +194,12 @@ function App() {
         <footer className="chat-input-area">
           <label className="upload-icon">
             📎
-            <input type="file" hidden accept="image/*" onChange={handleFileUpload} />
+            <input
+              type="file"
+              hidden
+              accept="image/*"
+              onChange={handleFileUpload}
+            />
           </label>
 
           <textarea
@@ -177,7 +209,11 @@ function App() {
             onKeyDown={handleKeyDown}
           />
 
-          <button className="btn send-btn" onClick={handleSend} disabled={isLoading}>
+          <button
+            className="btn send-btn"
+            onClick={handleSend}
+            disabled={isLoading}
+          >
             {isLoading ? "..." : "Send"}
           </button>
         </footer>
