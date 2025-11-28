@@ -11,27 +11,28 @@ export default function App() {
   const [input, setInput] = useState("");
   const [imageBase64, setImageBase64] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const [loading, setLoading] = useState(false);
   const [typingMessage, setTypingMessage] = useState("");
+  const [isThinking, setIsThinking] = useState(false);     // typing dots ON/OFF
   const [showToggleMsg, setShowToggleMsg] = useState(false);
   const chatEndRef = useRef(null);
 
-  /* Load saved chat */
+  // Load saved chat on first load
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
   }, []);
 
+  // Save chat whenever messages change
   useEffect(() => {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
   }, [messages]);
 
-  /* Auto scroll */
+  // Auto scroll to bottom
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typingMessage]);
+  }, [messages, typingMessage, isThinking]);
 
-  /* Auto resize */
+  // Auto resize textarea
   useEffect(() => {
     const textarea = document.getElementById("chatbox");
     if (textarea) {
@@ -45,6 +46,7 @@ export default function App() {
 
   const sendMessage = async () => {
     if (!input && !imageBase64) return;
+
     const newMsg = {
       role: "user",
       content: input || "(Image)",
@@ -52,11 +54,14 @@ export default function App() {
       time: timeNow(),
     };
 
-    setMessages((p) => [...p, newMsg]);
+    setMessages((prev) => [...prev, newMsg]);
     setInput("");
     setImagePreview(null);
     setImageBase64(null);
-    setLoading(true);
+
+    // show typing dots immediately
+    setTypingMessage("");
+    setIsThinking(true);
 
     try {
       const res = await axios.post(API_URL, {
@@ -64,35 +69,35 @@ export default function App() {
         context: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
         image_base64: newMsg.image,
       });
-      typeBotMessage(res.data.answer);
+
+      typeBotMessage(res.data.answer || "⚠ Empty brain. Try again.");
     } catch {
-  typeBotMessage("⚠ Server slow — retrying… please wait…");
-setTimeout(() => setTypingMessage(""), 1500);
-
-}
-
+      typeBotMessage("⚠ Server slow — retrying…");
+    }
   };
 
-  /* Typewriter */
+  // Typewriter effect + stop dots + show blinking cursor
   const typeBotMessage = (text) => {
-    setLoading(false);
-    setTypingMessage("");
+    setIsThinking(false);        // hide dots
+    setTypingMessage("");        // clear previous
     let i = 0;
+
     const interval = setInterval(() => {
       setTypingMessage((prev) => prev + text.charAt(i));
       i++;
-      if (i === text.length) {
+      if (i >= text.length) {
         clearInterval(interval);
+        // push final message to chat
         setMessages((prev) => [
           ...prev,
           { role: "assistant", content: text, time: timeNow() },
         ]);
         setTypingMessage("");
       }
-    }, 20);
+    }, 20); // typing speed (ms per character)
   };
 
-  /* Image upload */
+  // Image upload
   const handleUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -105,7 +110,7 @@ setTimeout(() => setTypingMessage(""), 1500);
     reader.readAsDataURL(file);
   };
 
-  /* Toggle note only */
+  // Fake theme toggle → only warning message
   const showToggleWarning = () => {
     setShowToggleMsg(true);
     setTimeout(() => setShowToggleMsg(false), 3000);
@@ -113,7 +118,7 @@ setTimeout(() => setTypingMessage(""), 1500);
 
   return (
     <div className="app">
-      {/* Header */}
+      {/* HEADER */}
       <header className="header">
         <div className="title">ChatPPT 🔥 psycho-funny AI</div>
         <div className="theme-switch">
@@ -125,7 +130,9 @@ setTimeout(() => setTypingMessage(""), 1500);
       </header>
 
       {showToggleMsg && (
-        <div className="toggle-cloud">⚠ Under construction… don’t play with this 😑</div>
+        <div className="toggle-cloud">
+          ⚠ Under construction… don’t play with this 😑
+        </div>
       )}
 
       {/* CHAT AREA */}
@@ -148,6 +155,7 @@ setTimeout(() => setTypingMessage(""), 1500);
                 <img
                   src={`data:image/png;base64,${m.image}`}
                   className="chat-img"
+                  alt=""
                 />
               )}
               <div className="time">{m.time}</div>
@@ -155,22 +163,44 @@ setTimeout(() => setTypingMessage(""), 1500);
           </div>
         ))}
 
+        {/* TYPING DOTS WHILE WAITING */}
+        {isThinking && !typingMessage && (
+          <div className="msg-row assistant">
+            <img
+              className="avatar"
+              src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
+              alt=""
+            />
+            <div className="typing-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        )}
+
+        {/* TYPEWRITER + CURSOR */}
         {typingMessage && (
           <div className="msg-row assistant">
             <img
               className="avatar"
               src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
+              alt=""
             />
-            <div className="bubble typing">{typingMessage}</div>
+            <div className="bubble typing">
+              {typingMessage}
+              <span className="cursor" />
+            </div>
           </div>
         )}
 
         <div ref={chatEndRef}></div>
       </div>
 
-      {/* INPUT */}
+      {/* INPUT BAR */}
       <div className="input-area">
-        {imagePreview && <img src={imagePreview} className="preview" />}
+        {imagePreview && <img src={imagePreview} className="preview" alt="" />}
+
         <label className="upload-btn">
           📎
           <input type="file" accept="image/*" onChange={handleUpload} />
@@ -184,7 +214,7 @@ setTimeout(() => setTypingMessage(""), 1500);
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
         />
 
-        <button className="send" onClick={sendMessage} disabled={loading}>
+        <button className="send" onClick={sendMessage}>
           ➤
         </button>
       </div>

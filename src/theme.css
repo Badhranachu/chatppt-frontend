@@ -1,11 +1,10 @@
-/* GLOBAL COLOR THEME */
-
 :root {
   --bg: #0f1116;
   --header: #111318;
-  --bubble: #1c1e24;
-  --border: #2b2d36;
-  --text: #e2e2e2;
-  --user: #2563eb;
+  --border: #262b35;
+  --text: #e5e7eb;
+  --bubble: #1b1f2a;
+  --bubble-border: #303544;
+  --textbox: #0b0d11;
   --accent: #3b82f6;
 }
