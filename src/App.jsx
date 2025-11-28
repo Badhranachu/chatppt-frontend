@@ -133,7 +133,7 @@ function App() {
   return (
     <div className="app-root">
       <aside className="sidebar">
-        <h1>ChatPPT 🚀..hbhv.</h1>
+        <h1>ChatPPT 🚀..hbhv.skjbskb</h1>
         <p className="subtitle">100% Right.</p>
 
         <button className="btn" onClick={clearChat}>🧹 Clear Chat</button>
