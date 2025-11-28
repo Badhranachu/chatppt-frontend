@@ -79,7 +79,7 @@ export default function App() {
           { role: "assistant", content: "⚠ Server slow — retrying…", time: timeNow() },
         ]);
 
-        setTimeout(() => sendMessage(), 1700);
+        
       } else {
         typeBotMessage("⚠ Backend failed. Try again later.");
       }
