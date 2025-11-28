@@ -194,6 +194,11 @@ textarea:focus {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+#root {
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
 
 
 .avatar {
@@ -201,5 +206,7 @@ textarea:focus {
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  color: white;
+  filter: invert(100%) brightness(200%);
+  border: 1px solid rgba(255,255,255,0.25);
+
 }
