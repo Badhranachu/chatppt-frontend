@@ -72,11 +72,17 @@ function App() {
       .join("\n");
 
     try {
-      const res = await axios.post(API_URL, {
-        message: userInput,
-        context,
-        image_base64: imageBase64,
-      });
+      const res = await axios.post(
+        API_URL,
+        {
+          message: userInput,
+          context,
+          image_base64: imageBase64,
+        },
+        {
+          headers: { "Content-Type": "application/json" }
+        }
+      );
 
       const botMessage = {
         id: (Date.now() + 1).toString(),
