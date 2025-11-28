@@ -12,32 +12,44 @@ export default function App() {
   const [imageBase64, setImageBase64] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [typingText, setTypingText] = useState("");
-  const [themeWarning, setThemeWarning] = useState(false);
+  const [typingMessage, setTypingMessage] = useState("");
+  const [showToggleMsg, setShowToggleMsg] = useState(false);
   const chatEndRef = useRef(null);
 
+  /* Load saved chat */
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", "dark");
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
   }, []);
 
   useEffect(() => {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
+  }, [messages]);
+
+  /* Auto scroll */
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typingText]);
+  }, [messages, typingMessage]);
+
+  /* Auto resize */
+  useEffect(() => {
+    const textarea = document.getElementById("chatbox");
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    }
+  }, [input]);
 
   const timeNow = () =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   const sendMessage = async () => {
     if (!input && !imageBase64) return;
-
     const newMsg = {
       role: "user",
       content: input || "(Image)",
-      time: timeNow(),
       image: imageBase64,
+      time: timeNow(),
     };
 
     setMessages((p) => [...p, newMsg]);
@@ -52,92 +64,127 @@ export default function App() {
         context: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
         image_base64: newMsg.image,
       });
-
-      typeWriter(res.data.answer);
+      typeBotMessage(res.data.answer);
     } catch {
-      typeWriter("⚠ Backend went out for chai.");
+      typeBotMessage("⚠ Backend went out for chai.");
     }
   };
 
-  const typeWriter = (text) => {
+  /* Typewriter */
+  const typeBotMessage = (text) => {
     setLoading(false);
-    setTypingText("");
+    setTypingMessage("");
     let i = 0;
     const interval = setInterval(() => {
-      setTypingText((t) => t + text.charAt(i));
+      setTypingMessage((prev) => prev + text.charAt(i));
       i++;
       if (i === text.length) {
         clearInterval(interval);
-        setMessages((p) => [...p, { role: "assistant", content: text, time: timeNow() }]);
-        setTypingText("");
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: text, time: timeNow() },
+        ]);
+        setTypingMessage("");
       }
-    }, 19);
+    }, 20);
   };
 
-  const toggleTheme = () => {
-    setThemeWarning(true);
-    setTimeout(() => setThemeWarning(false), 2000);
-  };
-
-  const uploadFile = (e) => {
-    const f = e.target.files[0];
-    const r = new FileReader();
-    r.onload = () => {
-      setImagePreview(r.result);
-      setImageBase64(r.result.split(",")[1]);
+  /* Image upload */
+  const handleUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result.split(",")[1];
+      setImageBase64(base64);
+      setImagePreview(reader.result);
     };
-    r.readAsDataURL(f);
+    reader.readAsDataURL(file);
+  };
+
+  /* Toggle note only */
+  const showToggleWarning = () => {
+    setShowToggleMsg(true);
+    setTimeout(() => setShowToggleMsg(false), 3000);
   };
 
   return (
     <div className="app">
+      {/* Header */}
       <header className="header">
-        <h1>ChatPPT 🔥 psycho-funny AI</h1>
-
-        <div className="toggle-box" onClick={toggleTheme}>
-          <div className="toggle-circle"></div>
+        <div className="title">ChatPPT 🔥 psycho-funny AI</div>
+        <div className="theme-switch">
+          <label className="switch">
+            <input type="checkbox" onClick={showToggleWarning} />
+            <span className="slider"></span>
+          </label>
         </div>
       </header>
 
-      {themeWarning && (
-        <div className="theme-popup">⚠ Under construction… don’t play with this 😑</div>
+      {showToggleMsg && (
+        <div className="toggle-cloud">⚠ Under construction… don’t play with this 😑</div>
       )}
 
-      <div className="chat-area">
-        {messages.map((m, i) => (
-          <div key={i} className={`msg ${m.role}`}>
+      {/* CHAT AREA */}
+      <div className="chat">
+        {messages.map((m, idx) => (
+          <div key={idx} className={`msg-row ${m.role}`}>
+            <img
+              className="avatar"
+              src={
+                m.role === "user"
+                  ? "https://cdn-icons-png.flaticon.com/512/1946/1946429.png"
+                  : "https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
+              }
+              alt=""
+            />
+
             <div className="bubble">
-              {m.content}
-              {m.image && <img src={`data:image/png;base64,${m.image}`} className="chat-img" />}
+              <div className="text">{m.content}</div>
+              {m.image && (
+                <img
+                  src={`data:image/png;base64,${m.image}`}
+                  className="chat-img"
+                />
+              )}
               <div className="time">{m.time}</div>
             </div>
           </div>
         ))}
 
-        {typingText && (
-          <div className="msg assistant">
-            <div className="bubble typing">{typingText}</div>
+        {typingMessage && (
+          <div className="msg-row assistant">
+            <img
+              className="avatar"
+              src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
+            />
+            <div className="bubble typing">{typingMessage}</div>
           </div>
         )}
 
         <div ref={chatEndRef}></div>
       </div>
 
-      <footer className="input-bar">
-        <label className="upload-btn">📎
-          <input type="file" accept="image/*" onChange={uploadFile} />
+      {/* INPUT */}
+      <div className="input-area">
+        {imagePreview && <img src={imagePreview} className="preview" />}
+        <label className="upload-btn">
+          📎
+          <input type="file" accept="image/*" onChange={handleUpload} />
         </label>
 
-        {imagePreview && <img src={imagePreview} className="preview" />}
-
         <textarea
-          value={input}
+          id="chatbox"
           placeholder="Message…"
+          value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
         />
-        <button onClick={sendMessage}>➤</button>
-      </footer>
+
+        <button className="send" onClick={sendMessage} disabled={loading}>
+          ➤
+        </button>
+      </div>
     </div>
   );
 }

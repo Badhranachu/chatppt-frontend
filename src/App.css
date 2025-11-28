@@ -77,3 +77,11 @@
   70% { opacity:1; }
   100% { opacity:0; }
 }
+
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
