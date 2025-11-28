@@ -1,56 +1,32 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
 const LOCAL_KEY = "chatppt_chats_v1";
 const API_URL = "https://chatppt-backend.onrender.com/api/chat/";
 
-/* ──────────────────────────────────────────────
-    1) CREATOR INSTAGRAM LIVE PREVIEW CARD
-────────────────────────────────────────────── */
-function CreatorCard() {
-  const creator = {
-    name: "Badhran K S",
-    username: "i.badhran",
-    image: "https://i.postimg.cc/hGb7P8tM/badhan-insta.jpg", // 🔥 USE THIS
-  };
-
-  return (
-    <div
-      className="creator-preview"
-      onClick={() => window.open("https://www.instagram.com/i.badhran/", "_blank")}
-      style={{ cursor: "pointer" }}
-    >
-      <img src={creator.image} className="creator-img" alt="Creator" />
-      <div className="creator-meta">
-        <div className="creator-name">{creator.name}</div>
-        <div className="creator-id">@{creator.username}</div>
-        <div className="creator-title">Developer of chatppt</div>
-      </div>
-    </div>
-  );
-}
-
-
-/* ──────────────────────────────────────────────
-    2) MAIN APPLICATION
-────────────────────────────────────────────── */
 function App() {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [imageBase64, setImageBase64] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const chatEndRef = useRef(null);
 
-  // Load stored chat on refresh
+  // Load chat on refresh
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
   }, []);
 
-  // Auto-store chat
+  // Auto save chat
   useEffect(() => {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
+    scrollToBottom();
   }, [messages]);
+
+  const scrollToBottom = () => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const handleSend = async () => {
     if (!userInput && !imageBase64) return;
@@ -60,6 +36,7 @@ function App() {
       role: "user",
       content: userInput || "(Image)",
       image: imageBase64 || null,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
 
     setMessages((prev) => [...prev, newUserMessage]);
@@ -79,15 +56,14 @@ function App() {
           context,
           image_base64: imageBase64,
         },
-        {
-          headers: { "Content-Type": "application/json" }
-        }
+        { headers: { "Content-Type": "application/json" } }
       );
 
       const botMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: res.data.answer,
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
 
       setMessages((prev) => [...prev, botMessage]);
@@ -97,7 +73,8 @@ function App() {
         {
           id: "err",
           role: "assistant",
-          content: "chatppt crashed while trying to roast reality.",
+          content: "⚠ Something went wrong. Try again.",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         },
       ]);
     } finally {
@@ -133,28 +110,21 @@ function App() {
   return (
     <div className="app-root">
       <aside className="sidebar">
-        <h1>ChatPPT 🚀..hbhv.skjbskb</h1>
-        <p className="subtitle">100% Right.</p>
-
+        <h1 className="brand">ChatPPT</h1>
+        <p className="subtitle">Smart AI Chat Assistant</p>
         <button className="btn" onClick={clearChat}>🧹 Clear Chat</button>
-
-        <h3>Upload Image</h3>
-        <input type="file" accept="image/*" onChange={handleFileUpload} />
-        {imagePreview && <img src={imagePreview} alt="preview" className="preview-img" />}
-
       </aside>
 
       <main className="chat-container">
         <header className="chat-header">
           <h2>ChatPPT</h2>
-          <span className="muted">Telling reality since 2025.</span>
         </header>
 
         <section className="messages">
           {messages.length === 0 && (
             <div className="empty-state">
               <h3>Start a conversation</h3>
-              <p>Ask anything. chatppt will confidently give Real answer .</p>
+              <p>Ask anything. Always get confident answers.</p>
             </div>
           )}
 
@@ -166,44 +136,47 @@ function App() {
               }`}
             >
               <div className="message-bubble">
-                <div className="message-role">{msg.role === "user" ? "You" : "chatppt"}</div>
-
                 {msg.image && (
                   <img
                     src={`data:image/jpeg;base64,${msg.image}`}
-                    alt="sent"
                     className="chat-image"
+                    alt="sent"
                   />
                 )}
 
-                {msg.content.split("\n").map((line, idx) => (
-                  <p key={idx}>{line}</p>
+                {msg.content.split("\n\n").map((para, idx) => (
+                  <p key={idx} className="message-para">{para}</p>
                 ))}
 
-                {/* Auto Instagram preview card */}
-                {msg.content.includes("instagram.com/i.badhran") && <CreatorCard />}
+                <div className="message-time">{msg.time}</div>
               </div>
             </div>
           ))}
 
           {isLoading && (
             <div className="message-row message-assistant">
-              <div className="message-bubble">
-                <div className="message-role">chatppt</div>
-                <p>Thinking of a dramatic insult…</p>
+              <div className="typing-bubble">
+                <span></span><span></span><span></span>
               </div>
             </div>
           )}
+
+          <div ref={chatEndRef} />
         </section>
 
         <footer className="chat-input-area">
+          <label className="upload-icon">
+            📎
+            <input type="file" hidden accept="image/*" onChange={handleFileUpload} />
+          </label>
+
           <textarea
-            placeholder="Send a message..."
+            placeholder="Message..."
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            rows={2}
           />
+
           <button className="btn send-btn" onClick={handleSend} disabled={isLoading}>
             {isLoading ? "..." : "Send"}
           </button>
