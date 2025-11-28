@@ -3,32 +3,63 @@ import axios from "axios";
 
 const LOCAL_KEY = "chatppt_chats_v1";
 const API_URL = "https://chatppt-backend.onrender.com/api/chat/";
-const MIN_TYPING_MS = 700; // minimum time to show typing animation
 
 function App() {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // waiting for API
+  const [typingState, setTypingState] = useState(null); // typewriter
   const [imageBase64, setImageBase64] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-  const chatEndRef = useRef(null);
+  const [theme, setTheme] = useState("dark");
 
-  // Load chat on refresh
+  const chatEndRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  // Load old chat on refresh
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
   }, []);
 
-  // Auto-save + scroll
+  // Save chat + scroll when messages change
   useEffect(() => {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    scrollToBottom();
   }, [messages]);
+
+  // Scroll while text is typing
+  useEffect(() => {
+    if (typingState) scrollToBottom();
+  }, [typingState]);
+
+  // Typewriter effect for last bot message
+  useEffect(() => {
+    if (!typingState) return;
+
+    if (typingState.text.length >= typingState.full.length) {
+      setTypingState(null);
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setTypingState((prev) => ({
+        ...prev,
+        text: prev.full.slice(0, prev.text.length + 1),
+      }));
+    }, 12); // typing speed (ms per char)
+
+    return () => clearTimeout(timeout);
+  }, [typingState]);
+
+  const scrollToBottom = () => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const handleSend = async () => {
     if (!userInput && !imageBase64) return;
 
-    const timestamp = new Date().toLocaleTimeString([], {
+    const time = new Date().toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -38,30 +69,18 @@ function App() {
       role: "user",
       content: userInput || "(Image)",
       image: imageBase64 || null,
-      time: timestamp,
+      time,
     };
 
     setMessages((prev) => [...prev, newUserMessage]);
     setUserInput("");
+    autoResizeTextarea("");
     setIsLoading(true);
 
     const context = messages
       .slice(-12)
       .map((m) => `${m.role}: ${m.content}`)
       .join("\n");
-
-    const startedAt = Date.now();
-
-    const finishLoading = (callback) => {
-      const elapsed = Date.now() - startedAt;
-      const delay = Math.max(0, MIN_TYPING_MS - elapsed);
-      setTimeout(() => {
-        callback?.();
-        setIsLoading(false);
-        setImageBase64(null);
-        setImagePreview(null);
-      }, delay);
-    };
 
     try {
       const res = await axios.post(
@@ -74,34 +93,43 @@ function App() {
         { headers: { "Content-Type": "application/json" } }
       );
 
+      const fullText = res.data.answer || "";
+      const botId = (Date.now() + 1).toString();
+
       const botMessage = {
-        id: (Date.now() + 1).toString(),
+        id: botId,
         role: "assistant",
-        content: res.data.answer,
+        content: fullText,
+        image: null,
         time: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         }),
       };
 
-      finishLoading(() => {
-        setMessages((prev) => [...prev, botMessage]);
-      });
+      setMessages((prev) => [...prev, botMessage]);
+      setTypingState({ id: botId, full: fullText, text: "" });
     } catch (err) {
-      finishLoading(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: "err",
-            role: "assistant",
-            content: "⚠ Something went wrong. Try again.",
-            time: new Date().toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-          },
-        ]);
-      });
+      const fallbackText = "⚠ chatppt glitched. Ask again.";
+      const botId = (Date.now() + 1).toString();
+
+      const botMessage = {
+        id: botId,
+        role: "assistant",
+        content: fallbackText,
+        image: null,
+        time: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+
+      setMessages((prev) => [...prev, botMessage]);
+      setTypingState({ id: botId, full: fallbackText, text: "" });
+    } finally {
+      setIsLoading(false); // we now have text to type
+      setImageBase64(null);
+      setImagePreview(null);
     }
   };
 
@@ -110,6 +138,20 @@ function App() {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleChange = (e) => {
+    const value = e.target.value;
+    setUserInput(value);
+    autoResizeTextarea(value);
+  };
+
+  const autoResizeTextarea = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "0px";
+    const newHeight = Math.min(el.scrollHeight, 140);
+    el.style.height = newHeight + "px";
   };
 
   const handleFileUpload = (e) => {
@@ -128,13 +170,24 @@ function App() {
     if (window.confirm("Clear full chat?")) setMessages([]);
   };
 
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
+
   return (
-    <div className="app-root">
+    <div className={`app-root ${theme}`}>
       <aside className="sidebar">
-        <h1 className="brand">ChatPPT</h1>
-        <p className="subtitle">Smart AI Chat Assistant</p>
+        <div className="sidebar-header">
+          <h1 className="brand">ChatPPT</h1>
+          <p className="subtitle">Psycho-funny AI assistant</p>
+        </div>
+
         <button className="btn" onClick={clearChat}>
           🧹 Clear Chat
+        </button>
+
+        <button className="btn theme-btn" onClick={toggleTheme}>
+          {theme === "dark" ? "☀ Light mode" : "🌙 Dark mode"}
         </button>
       </aside>
 
@@ -147,43 +200,72 @@ function App() {
           {messages.length === 0 && (
             <div className="empty-state">
               <h3>Start a conversation</h3>
-              <p>Ask anything. You’ll get a brutally honest answer.</p>
+              <p>Ask anything. chatppt will answer with overconfident chaos.</p>
             </div>
           )}
 
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`message-row ${
-                msg.role === "user" ? "message-user" : "message-assistant"
-              }`}
-            >
-              <div className="message-bubble">
-                {msg.image && (
-                  <img
-                    src={`data:image/jpeg;base64,${msg.image}`}
-                    className="chat-image"
-                    alt="sent"
-                  />
+          {messages.map((msg) => {
+            const isBot = msg.role === "assistant";
+            const isTypingMsg =
+              typingState && typingState.id === msg.id && isBot;
+            const contentToShow = isTypingMsg
+              ? typingState.text
+              : msg.content;
+
+            return (
+              <div
+                key={msg.id}
+                className={`message-row ${
+                  isBot ? "message-assistant" : "message-user"
+                }`}
+              >
+                {isBot && (
+                  <div className="avatar bot-avatar">
+                    <span>c</span>
+                  </div>
                 )}
 
-                {msg.content.split("\n\n").map((para, idx) => (
-                  <p key={idx} className="message-para">
-                    {para}
-                  </p>
-                ))}
+                <div className="message-bubble">
+                  {msg.image && (
+                    <img
+                      src={`data:image/jpeg;base64,${msg.image}`}
+                      alt="sent"
+                      className="chat-image"
+                    />
+                  )}
 
-                <div className="message-time">{msg.time}</div>
+                  <div
+                    className="message-content"
+                    dangerouslySetInnerHTML={{
+                      __html: (contentToShow || "")
+                        .replace(/\n/g, "<br/>")
+                        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"),
+                    }}
+                  ></div>
+
+                  <div className="message-time">{msg.time}</div>
+                </div>
+
+                {!isBot && (
+                  <div className="avatar user-avatar">
+                    <span>you</span>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {isLoading && (
             <div className="message-row message-assistant">
-              <div className="typing-bubble">
-                <span></span>
-                <span></span>
-                <span></span>
+              <div className="avatar bot-avatar">
+                <span>c</span>
+              </div>
+              <div className="message-bubble typing-container">
+                <div className="typing-bubble">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
               </div>
             </div>
           )}
@@ -202,12 +284,31 @@ function App() {
             />
           </label>
 
-          <textarea
-            placeholder="Message..."
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
+          <div className="input-wrapper">
+            {imagePreview && (
+              <div className="preview-chip">
+                <img src={imagePreview} alt="preview" />
+                <button
+                  className="remove-img"
+                  onClick={() => {
+                    setImagePreview(null);
+                    setImageBase64(null);
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            <textarea
+              ref={textareaRef}
+              placeholder="Message..."
+              value={userInput}
+              onChange={handleChange}
+              onKeyDown={handleKeyDown}
+              rows={1}
+            />
+          </div>
 
           <button
             className="btn send-btn"

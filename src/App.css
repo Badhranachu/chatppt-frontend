@@ -85,5 +85,125 @@
 
 @keyframes bounce {
   0%, 80%, 100% { transform: scale(0); }
-  40% { transform: scale(1); }
+  40% { transform: scale(1
+    
+    ); }
+}
+
+
+
+/* Avatars */
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  margin: 0 8px;
+}
+
+.bot-avatar {
+  background: #0f172a;
+  color: #38bdf8;
+  border: 1px solid #1e293b;
+}
+
+.user-avatar {
+  background: #1d4ed8;
+  color: #e5e7eb;
+}
+
+/* Typing container */
+
+.typing-container {
+  display: flex;
+  align-items: center;
+}
+
+/* Input wrapper + preview chip inside textbox area */
+
+.input-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #111827;
+  border-radius: 8px;
+  padding: 4px 8px;
+  gap: 6px;
+  margin-bottom: 4px;
+  border: 1px solid #334155;
+}
+
+.preview-chip img {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.remove-img {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* Auto-resize textarea look */
+
+.chat-input-area textarea {
+  flex: 1;
+  resize: none;
+  max-height: 140px;
+}
+
+/* Theme override */
+
+.app-root.light {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.app-root.light .sidebar {
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+}
+
+.app-root.light .chat-container {
+  background: #f9fafb;
+}
+
+.app-root.light .message-bubble {
+  background: #ffffff;
+  border-color: #e5e7eb;
+}
+
+.app-root.light .message-user .message-bubble {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #f9fafb;
+}
+
+.app-root.light .chat-input-area {
+  border-top-color: #e5e7eb;
+  background: #f9fafb;
+}
+
+.theme-btn {
+  margin-top: 8px;
+  background: #0f172a;
+}
+
+.app-root.light .theme-btn {
+  background: #e5e7eb;
+  color: #111827;
 }
