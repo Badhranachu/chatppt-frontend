@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 const LOCAL_KEY = "chatppt_chats_v1";
-const API_URL = "http://127.0.0.1:8000/api/chat/";
+const API_URL = "https://chatppt-backend.onrender.com/api/chat/";
 
 /* ──────────────────────────────────────────────
     1) CREATOR INSTAGRAM LIVE PREVIEW CARD
