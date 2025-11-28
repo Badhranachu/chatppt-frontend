@@ -5,7 +5,6 @@ import "./theme.css";
 
 const API_URL = "https://chatppt-backend.onrender.com/api/chat/";
 const LOCAL_KEY = "chatppt_chats_v1";
-let retrying = false;
 
 export default function App() {
   const [messages, setMessages] = useState([]);
@@ -17,6 +16,7 @@ export default function App() {
   const [showToggleMsg, setShowToggleMsg] = useState(false);
   const chatEndRef = useRef(null);
 
+  /* Load saved chat */
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
@@ -26,23 +26,26 @@ export default function App() {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
   }, [messages]);
 
+  /* Auto scroll */
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typingMessage]);
 
+  /* Auto textarea resize */
   useEffect(() => {
-    const textarea = document.getElementById("chatbox");
-    if (textarea) {
-      textarea.style.height = "auto";
-      textarea.style.height = textarea.scrollHeight + "px";
+    const t = document.getElementById("chatbox");
+    if (t) {
+      t.style.height = "auto";
+      t.style.height = t.scrollHeight + "px";
     }
   }, [input]);
 
   const timeNow = () =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
+  let retrying = false;
+
   const sendMessage = async () => {
-    if (loading && retrying) return;
     if (!input && !imageBase64) return;
 
     const newMsg = {
@@ -57,7 +60,6 @@ export default function App() {
     setImagePreview(null);
     setImageBase64(null);
     setLoading(true);
-    retrying = false;
 
     try {
       const res = await axios.post(API_URL, {
@@ -65,24 +67,34 @@ export default function App() {
         context: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
         image_base64: newMsg.image,
       });
+
       typeBotMessage(res.data.answer);
-    } catch {
-      retrying = true;
-      typeBotMessage("⚠ Server slow — retrying…");
-      setTimeout(() => {
-        retrying = false;
-        sendMessage();
-      }, 2000);
+    } catch (err) {
+      if (!retrying) {
+        retrying = true;
+
+        // retry message bubble
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: "⚠ Server slow — retrying…", time: timeNow() },
+        ]);
+
+        setTimeout(() => sendMessage(), 1700);
+      } else {
+        typeBotMessage("⚠ Backend failed. Try again later.");
+      }
     }
   };
 
+  /* Typewriter animation */
   const typeBotMessage = (text) => {
     setLoading(false);
     setTypingMessage("");
     let i = 0;
+    const speed = 17;
 
     const interval = setInterval(() => {
-      setTypingMessage((prev) => prev + text.charAt(i));
+      setTypingMessage((p) => p + text.charAt(i));
       i++;
       if (i === text.length) {
         clearInterval(interval);
@@ -92,9 +104,10 @@ export default function App() {
         ]);
         setTypingMessage("");
       }
-    }, 20);
+    }, speed);
   };
 
+  /* Image upload */
   const handleUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -107,6 +120,7 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
+  /* Fake toggle — only shows message */
   const showToggleWarning = () => {
     setShowToggleMsg(true);
     setTimeout(() => setShowToggleMsg(false), 3000);
@@ -114,12 +128,17 @@ export default function App() {
 
   return (
     <div className="app">
+      {/* HEADER */}
       <header className="header">
-        <div className="title">ChatPPT 😈 Psycho-Sarcastic AI</div>
-        <label className="switch">
-          <input type="checkbox" onClick={showToggleWarning} />
-          <span className="slider"></span>
-        </label>
+        <div className="title">ChatPPT 🤖 Psycho-Sarcastic AI</div>
+
+        {/* center toggle — static */}
+        <div className="theme-switch">
+          <label className="switch">
+            <input type="checkbox" onClick={showToggleWarning} />
+            <span className="slider"></span>
+          </label>
+        </div>
       </header>
 
       {showToggleMsg && (
@@ -128,9 +147,10 @@ export default function App() {
         </div>
       )}
 
+      {/* CHAT */}
       <div className="chat">
-        {messages.map((m, i) => (
-          <div key={i} className={`msg-row ${m.role}`}>
+        {messages.map((m, idx) => (
+          <div key={idx} className={`msg-row ${m.role}`}>
             <img
               className="avatar"
               src={
@@ -141,19 +161,14 @@ export default function App() {
               alt=""
             />
             <div className="bubble">
-              {m.content}
-              {m.image && (
-                <img
-                  src={`data:image/png;base64,${m.image}`}
-                  className="chat-img"
-                  alt=""
-                />
-              )}
+              <div className="text">{m.content}</div>
+              {m.image && <img src={`data:image/png;base64,${m.image}`} className="chat-img" />}
               <div className="time">{m.time}</div>
             </div>
           </div>
         ))}
 
+        {/* TYPING ANIMATION */}
         {typingMessage && (
           <div className="msg-row assistant">
             <img
@@ -161,19 +176,9 @@ export default function App() {
               src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
               alt=""
             />
-            <div className="bubble typing">{typingMessage}▌</div>
-          </div>
-        )}
-
-        {loading && !typingMessage && (
-          <div className="msg-row assistant">
-            <img
-              className="avatar"
-              src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
-              alt=""
-            />
-            <div className="typing-dots">
-              <span></span><span></span><span></span>
+            <div className="bubble">
+              {typingMessage}
+              <span className="cursor"></span>
             </div>
           </div>
         )}
@@ -181,6 +186,7 @@ export default function App() {
         <div ref={chatEndRef}></div>
       </div>
 
+      {/* INPUT AREA */}
       <div className="input-area">
         {imagePreview && <img src={imagePreview} className="preview" />}
         <label className="upload-btn">
