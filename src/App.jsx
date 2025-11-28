@@ -118,7 +118,7 @@ export default function App() {
     <div className="app">
       {/* HEADER */}
       <header className="header">
-        <div className="title">ChatPPT 💥</div>
+        <div className="title">ChatPPT 💥n hhbhhb</div>
         <div className="theme-switch">
           <label className="switch">
             <input type="checkbox" onChange={toggleTheme} />
