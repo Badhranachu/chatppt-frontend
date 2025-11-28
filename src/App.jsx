@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import "./App.css";
-import "./theme.css";
 
 const API_URL = "https://chatppt-backend.onrender.com/api/chat/";
 const LOCAL_KEY = "chatppt_chats_v1";
@@ -13,9 +12,10 @@ export default function App() {
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [typingMessage, setTypingMessage] = useState("");
+  const [showNote, setShowNote] = useState(false);
   const chatEndRef = useRef(null);
 
-  // Load saved chats
+  /* Load saved chat */
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
@@ -25,17 +25,12 @@ export default function App() {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
   }, [messages]);
 
-  // Auto scroll
+  /* Auto scroll bottom */
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typingMessage]);
 
-  // Force dark mode always
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", "dark");
-  }, []);
-
-  // Auto resize textarea
+  /* Auto-resize input */
   useEffect(() => {
     const textarea = document.getElementById("chatbox");
     if (textarea) {
@@ -49,17 +44,18 @@ export default function App() {
     return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  /* Send msg */
   const sendMessage = async () => {
     if (!input && !imageBase64) return;
 
-    const userMsg = {
+    const newMsg = {
       role: "user",
       content: input || "(Image)",
       image: imageBase64,
       time: timeNow(),
     };
 
-    setMessages((p) => [...p, userMsg]);
+    setMessages((p) => [...p, newMsg]);
     setInput("");
     setImagePreview(null);
     setImageBase64(null);
@@ -67,22 +63,22 @@ export default function App() {
 
     try {
       const res = await axios.post(API_URL, {
-        message: userMsg.content,
+        message: newMsg.content,
         context: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
-        image_base64: userMsg.image,
+        image_base64: newMsg.image,
       });
-
-      typeWriter(res.data.answer);
+      typeBotMessage(res.data.answer);
     } catch {
-      typeWriter("⚠ System error. Backend went out for chai.");
+      typeBotMessage("⚠ Backend went out for chai.");
     }
   };
 
-  // Typing effect (letter by letter)
-  const typeWriter = (text) => {
+  /* Typewriter effect */
+  const typeBotMessage = (text) => {
     setLoading(false);
     setTypingMessage("");
     let i = 0;
+
     const interval = setInterval(() => {
       setTypingMessage((prev) => prev + text.charAt(i));
       i++;
@@ -94,9 +90,10 @@ export default function App() {
         ]);
         setTypingMessage("");
       }
-    }, 20);
+    }, 18);
   };
 
+  /* Upload */
   const handleUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -109,78 +106,95 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
-  // Toggle (disabled)
+  /* Toggle clicked (no theme change — only cloud msg) */
   const toggleClicked = () => {
-    alert("⚠ It is under construction… don’t play with this 😑");
-    document.documentElement.setAttribute("data-theme", "dark");
+    setShowNote(true);
+    setTimeout(() => setShowNote(false), 3000);
   };
 
   return (
     <div className="app">
-      {/* HEADER */}
-      <header className="header">
-        <div className="title">ChatPPT 🔥 psycho-funny AI</div>
-        <div className="theme-switch">
-          <label className="switch">
-            <input type="checkbox" onChange={toggleClicked} />
-            <span className="slider"></span>
-          </label>
-        </div>
-      </header>
-      <p className="feature-note">⚠ Under construction… don’t play with this 😑</p>
-
-      {/* CHAT VIEW */}
-      <div className="chat">
-        {messages.map((m, i) => (
-          <div key={i} className={`msg-row ${m.role}`}>
-            <img
-              className="avatar"
-              src={
-                m.role === "user"
-                  ? "https://cdn-icons-png.flaticon.com/512/1946/1946429.png"
-                  : "https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
-              }
-            />
-            <div>
-              <div className="bubble">{m.content}</div>
-              {m.image && <img src={imagePreview} className="chat-img" />}
-              <div className="time">{m.time}</div>
-            </div>
+      <div className="chat-wrapper">
+        {/* HEADER */}
+        <header className="header">
+          <div className="title">ChatPPT 🔥 psycho-funny AI</div>
+          <div className="theme-switch">
+            <label className="switch">
+              <input type="checkbox" onChange={toggleClicked} />
+              <span className="slider"></span>
+            </label>
           </div>
-        ))}
+        </header>
 
-        {typingMessage && (
-          <div className="msg-row assistant">
-            <img
-              className="avatar"
-              src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
-            />
-            <div className="bubble typing">{typingMessage}</div>
+        {/* CLOUD NOTE */}
+        {showNote && (
+          <div className="cloud-msg">
+            ⚠ Under construction… don’t play with this 😑
           </div>
         )}
 
-        <div ref={chatEndRef}></div>
-      </div>
+        {/* CHAT BOX */}
+        <div className="chat">
+          {messages.map((m, idx) => (
+            <div key={idx} className={`msg-row ${m.role}`}>
+              <img
+                className="avatar"
+                src={
+                  m.role === "user"
+                    ? "https://cdn-icons-png.flaticon.com/512/1946/1946429.png"
+                    : "https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
+                }
+                alt=""
+              />
+              <div className="bubble">
+                <div>{m.content}</div>
+                {m.image && (
+                  <img
+                    src={`data:image/png;base64,${m.image}`}
+                    className="chat-img"
+                    alt=""
+                  />
+                )}
+                <div className="time">{m.time}</div>
+              </div>
+            </div>
+          ))}
 
-      {/* INPUT */}
-      <div className="input-area">
-        {imagePreview && <img src={imagePreview} className="preview" />}
-        <label className="upload-btn">
-          📎
-          <input type="file" accept="image/*" onChange={handleUpload} />
-        </label>
+          {/* TYPING LETTER BY LETTER */}
+          {typingMessage && (
+            <div className="msg-row assistant">
+              <img
+                className="avatar"
+                src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
+                alt=""
+              />
+              <div className="bubble">{typingMessage}</div>
+            </div>
+          )}
 
-        <textarea
-          id="chatbox"
-          placeholder="Message…"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-        />
+          <div ref={chatEndRef}></div>
+        </div>
 
-        <button className="send" onClick={sendMessage} disabled={loading}>
-          ➤
-        </button>
+        {/* INPUT AREA */}
+        <div className="input-area">
+          {imagePreview && <img src={imagePreview} className="preview" alt="" />}
+          <label className="upload-btn">
+            📎
+            <input type="file" accept="image/*" onChange={handleUpload} />
+          </label>
+
+          <textarea
+            id="chatbox"
+            placeholder="Message…"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+          />
+
+          <button className="send" onClick={sendMessage} disabled={loading}>
+            ➤
+          </button>
+        </div>
       </div>
     </div>
   );
