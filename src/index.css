@@ -1,0 +1,15 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg); /* full dark screen */
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* avoids white scroll issue */
+}
+
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg);
+}
