@@ -16,6 +16,11 @@ export default function App() {
   const [typingMessage, setTypingMessage] = useState("");
   const chatEndRef = useRef(null);
 
+
+  useEffect(() => {
+  document.documentElement.setAttribute("data-theme", theme);
+}, [theme]);
+
   /* Load saved chat */
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
