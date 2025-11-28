@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import "./App.css";
+import "./theme.css";
 
 const API_URL = "https://chatppt-backend.onrender.com/api/chat/";
 const LOCAL_KEY = "chatppt_chats_v1";
@@ -11,48 +12,32 @@ export default function App() {
   const [imageBase64, setImageBase64] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [typingMessage, setTypingMessage] = useState("");
-  const [showNote, setShowNote] = useState(false);
+  const [typingText, setTypingText] = useState("");
+  const [themeWarning, setThemeWarning] = useState(false);
   const chatEndRef = useRef(null);
 
-  /* Load saved chat */
   useEffect(() => {
+    document.documentElement.setAttribute("data-theme", "dark");
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
   }, []);
 
   useEffect(() => {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
-  }, [messages]);
-
-  /* Auto scroll bottom */
-  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typingMessage]);
+  }, [messages, typingText]);
 
-  /* Auto-resize input */
-  useEffect(() => {
-    const textarea = document.getElementById("chatbox");
-    if (textarea) {
-      textarea.style.height = "auto";
-      textarea.style.height = textarea.scrollHeight + "px";
-    }
-  }, [input]);
+  const timeNow = () =>
+    new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  const timeNow = () => {
-    const d = new Date();
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
-  /* Send msg */
   const sendMessage = async () => {
     if (!input && !imageBase64) return;
 
     const newMsg = {
       role: "user",
       content: input || "(Image)",
-      image: imageBase64,
       time: timeNow(),
+      image: imageBase64,
     };
 
     setMessages((p) => [...p, newMsg]);
@@ -67,135 +52,92 @@ export default function App() {
         context: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
         image_base64: newMsg.image,
       });
-      typeBotMessage(res.data.answer);
+
+      typeWriter(res.data.answer);
     } catch {
-      typeBotMessage("⚠ Backend went out for chai.");
+      typeWriter("⚠ Backend went out for chai.");
     }
   };
 
-  /* Typewriter effect */
-  const typeBotMessage = (text) => {
+  const typeWriter = (text) => {
     setLoading(false);
-    setTypingMessage("");
+    setTypingText("");
     let i = 0;
-
     const interval = setInterval(() => {
-      setTypingMessage((prev) => prev + text.charAt(i));
+      setTypingText((t) => t + text.charAt(i));
       i++;
       if (i === text.length) {
         clearInterval(interval);
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: text, time: timeNow() },
-        ]);
-        setTypingMessage("");
+        setMessages((p) => [...p, { role: "assistant", content: text, time: timeNow() }]);
+        setTypingText("");
       }
-    }, 18);
+    }, 19);
   };
 
-  /* Upload */
-  const handleUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result.split(",")[1];
-      setImageBase64(base64);
-      setImagePreview(reader.result);
+  const toggleTheme = () => {
+    setThemeWarning(true);
+    setTimeout(() => setThemeWarning(false), 2000);
+  };
+
+  const uploadFile = (e) => {
+    const f = e.target.files[0];
+    const r = new FileReader();
+    r.onload = () => {
+      setImagePreview(r.result);
+      setImageBase64(r.result.split(",")[1]);
     };
-    reader.readAsDataURL(file);
-  };
-
-  /* Toggle clicked (no theme change — only cloud msg) */
-  const toggleClicked = () => {
-    setShowNote(true);
-    setTimeout(() => setShowNote(false), 3000);
+    r.readAsDataURL(f);
   };
 
   return (
     <div className="app">
-      <div className="chat-wrapper">
-        {/* HEADER */}
-        <header className="header">
-          <div className="title">ChatPPT 🔥 psycho-funny AI</div>
-          <div className="theme-switch">
-            <label className="switch">
-              <input type="checkbox" onChange={toggleClicked} />
-              <span className="slider"></span>
-            </label>
-          </div>
-        </header>
+      <header className="header">
+        <h1>ChatPPT 🔥 psycho-funny AI</h1>
 
-        {/* CLOUD NOTE */}
-        {showNote && (
-          <div className="cloud-msg">
-            ⚠ Under construction… don’t play with this 😑
+        <div className="toggle-box" onClick={toggleTheme}>
+          <div className="toggle-circle"></div>
+        </div>
+      </header>
+
+      {themeWarning && (
+        <div className="theme-popup">⚠ Under construction… don’t play with this 😑</div>
+      )}
+
+      <div className="chat-area">
+        {messages.map((m, i) => (
+          <div key={i} className={`msg ${m.role}`}>
+            <div className="bubble">
+              {m.content}
+              {m.image && <img src={`data:image/png;base64,${m.image}`} className="chat-img" />}
+              <div className="time">{m.time}</div>
+            </div>
+          </div>
+        ))}
+
+        {typingText && (
+          <div className="msg assistant">
+            <div className="bubble typing">{typingText}</div>
           </div>
         )}
 
-        {/* CHAT BOX */}
-        <div className="chat">
-          {messages.map((m, idx) => (
-            <div key={idx} className={`msg-row ${m.role}`}>
-              <img
-                className="avatar"
-                src={
-                  m.role === "user"
-                    ? "https://cdn-icons-png.flaticon.com/512/1946/1946429.png"
-                    : "https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
-                }
-                alt=""
-              />
-              <div className="bubble">
-                <div>{m.content}</div>
-                {m.image && (
-                  <img
-                    src={`data:image/png;base64,${m.image}`}
-                    className="chat-img"
-                    alt=""
-                  />
-                )}
-                <div className="time">{m.time}</div>
-              </div>
-            </div>
-          ))}
-
-          {/* TYPING LETTER BY LETTER */}
-          {typingMessage && (
-            <div className="msg-row assistant">
-              <img
-                className="avatar"
-                src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
-                alt=""
-              />
-              <div className="bubble">{typingMessage}</div>
-            </div>
-          )}
-
-          <div ref={chatEndRef}></div>
-        </div>
-
-        {/* INPUT AREA */}
-        <div className="input-area">
-          {imagePreview && <img src={imagePreview} className="preview" alt="" />}
-          <label className="upload-btn">
-            📎
-            <input type="file" accept="image/*" onChange={handleUpload} />
-          </label>
-
-          <textarea
-            id="chatbox"
-            placeholder="Message…"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-          />
-
-          <button className="send" onClick={sendMessage} disabled={loading}>
-            ➤
-          </button>
-        </div>
+        <div ref={chatEndRef}></div>
       </div>
+
+      <footer className="input-bar">
+        <label className="upload-btn">📎
+          <input type="file" accept="image/*" onChange={uploadFile} />
+        </label>
+
+        {imagePreview && <img src={imagePreview} className="preview" />}
+
+        <textarea
+          value={input}
+          placeholder="Message…"
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+        />
+        <button onClick={sendMessage}>➤</button>
+      </footer>
     </div>
   );
 }
