@@ -1,0 +1,60 @@
+/* LIGHT AND DARK MODE COLORS */
+
+:root[data-theme="dark"] {
+  --bg: #0f1116;
+  --header: rgba(22, 24, 31, 0.75);
+  --border: #23252d;
+  --text: #e2e2e2;
+  --text-soft: #9aa0a8;
+  --bubble: #1c1e24;
+  --bubble-border: #2b2d36;
+  --user: #2563eb;
+  --textbox: #111318;
+  --accent: #3b82f6;
+}
+
+:root[data-theme="light"] {
+  --bg: #f6f7f9;
+  --header: rgba(255, 255, 255, 0.75);
+  --border: #d2d6df;
+  --text: #1e1e1e;
+  --text-soft: #61656a;
+  --bubble: #ffffff;
+  --bubble-border: #cfd3dd;
+  --user: #2563eb;
+  --textbox: #ffffff;
+  --accent: #3b82f6;
+}
+
+/* TOGGLE SWITCH */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+.switch input {
+  display: none;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  background: var(--border);
+  border-radius: 24px;
+  inset: 0;
+  transition: .3s;
+}
+.slider:before {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: 2px;
+  bottom: 2px;
+  background: var(--accent);
+  border-radius: 50%;
+  transition: .3s;
+}
+.switch input:checked + .slider:before {
+  transform: translateX(22px);
+}
