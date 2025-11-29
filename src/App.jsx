@@ -43,67 +43,71 @@ export default function App() {
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   const sendMessage = async () => {
-    if (!input && !imageBase64) return;
+  if (!input && !imageBase64) return;
 
-    const newMsg = {
-      role: "user",
-      content: input || "(Image)",
-      image: imageBase64,
-      time: timeNow(),
-    };
+  const newMsg = {
+    role: "user",
+    content: input || "(Image)",
+    image: imageBase64,
+    time: timeNow(),
+  };
 
-    setMessages((p) => [...p, newMsg]);
-    setInput("");
-    setImagePreview(null);
-    setImageBase64(null);
-    setLoading(true);
+  setMessages((p) => [...p, newMsg]);
+  setInput("");
+  setImagePreview(null);
+  setImageBase64(null);
+  setLoading(true);
 
-    try {
-      // Warm backend first
-      await axios.get("https://chatppt-backend.onrender.com/ping/");
+  try {
+    // 1️⃣ Wake backend
+    await axios.get("https://chatppt-backend.onrender.com/ping/");
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // 🔥 wait 3 sec
 
-      const res = await axios.post(API_URL, {
-        message: newMsg.content,
-        context: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
-        image_base64: newMsg.image,
-      });
+    // 2️⃣ Now send actual chat
+    const res = await axios.post(API_URL, {
+      message: newMsg.content,
+      context: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
+      image_base64: newMsg.image,
+    });
 
-      retrying = false;
-      typeBotMessage(res.data.answer);
-    } catch {
-      setLoading(false);
+    retrying = false;
+    typeBotMessage(res.data.answer);
+  } catch {
+    setLoading(false);
 
-      if (!retrying) {
-        retrying = true;
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: "🔴 Backend offline — retrying…",
-            time: timeNow(),
-          },
-        ]);
+    if (!retrying) {
+      retrying = true;
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "🔴 Backend offline — retrying…",
+          time: timeNow(),
+        },
+      ]);
 
-        // Retry every 3s until backend restores
-        const interval = setInterval(async () => {
-          try {
-            await axios.get("https://chatppt-backend.onrender.com/ping/");
-            clearInterval(interval);
-            retrying = false;
-            setMessages((prev) => [
-              ...prev,
-              {
-                role: "assistant",
-                content: "🟢 Backend restored — you can continue 😊",
-                time: timeNow(),
-              },
-            ]);
-          } catch {}
-        }, 3000);
-      } else {
-        typeBotMessage("⚠ Backend failed. Try again later.");
-      }
+      // Retry until backend returns
+      const interval = setInterval(async () => {
+        try {
+          await axios.get("https://chatppt-backend.onrender.com/ping/");
+          clearInterval(interval);
+          retrying = false;
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: "🟢 Backend restored — you can continue 😊",
+              time: timeNow(),
+            },
+          ]);
+        } catch {}
+      }, 3000);
+    } else {
+      typeBotMessage("⚠ Backend failed. Try again later.");
     }
+  }
+};
+
   };
 
   const typeBotMessage = (text) => {
