@@ -108,7 +108,7 @@ export default function App() {
   }
 };
 
-  };
+
 
   const typeBotMessage = (text) => {
     setLoading(false);
