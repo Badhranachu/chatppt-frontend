@@ -16,8 +16,6 @@ export default function App() {
   const [showToggleMsg, setShowToggleMsg] = useState(false);
   const chatEndRef = useRef(null);
 
-  let retrying = false;
-
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
@@ -58,53 +56,22 @@ export default function App() {
     setImageBase64(null);
     setLoading(true);
 
-    try {
-      // 🌐 Wake backend
-      await axios.get("https://chatppt-backend-production.up.railway.app/ping/");
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    const recentContext = messages
+      .slice(-5)
+      .map((m) => `${m.role}: ${m.content}`)
+      .join("\n");
 
-      // 🚀 Actual chat request
+    try {
       const res = await axios.post(API_URL, {
         message: newMsg.content,
-        context: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
+        context: recentContext,
         image_base64: newMsg.image,
       });
 
-      retrying = false;
       typeBotMessage(res.data.answer);
-    } catch {
+    } catch (err) {
       setLoading(false);
-
-      if (!retrying) {
-        retrying = true;
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: "🔴 Backend offline — retrying…",
-            time: timeNow(),
-          },
-        ]);
-
-        // ⏳ Retry every 3 sec until backend returns
-        const interval = setInterval(async () => {
-          try {
-            await axios.get("https://chatppt-backend-production.up.railway.app/ping/");
-            clearInterval(interval);
-            retrying = false;
-            setMessages((prev) => [
-              ...prev,
-              {
-                role: "assistant",
-                content: "🟢 Backend restored — you can continue 😊",
-                time: timeNow(),
-              },
-            ]);
-          } catch {}
-        }, 3000);
-      } else {
-        typeBotMessage("⚠ Backend failed. Try again later.");
-      }
+      typeBotMessage("⚠ Something went wrong — try again.");
     }
   };
 
