@@ -123,7 +123,7 @@ export default function App() {
         <div className="title">ChatPPT 🤖 Serious AI</div>
 
         <div className="theme-switch">
-          <label htmlFor="">day</label>
+          <label htmlFor="">Cool🧊</label>
           <label className="switch">
             
             <input type="checkbox" onClick={showToggleWarning} />
@@ -131,7 +131,7 @@ export default function App() {
             <span className="slider"></span>
             
           </label>
-          <label htmlFor="">afternoon</label>
+          <label htmlFor="">Hans❤️‍🩹</label>
 
         </div>
       </header>
