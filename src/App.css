@@ -282,3 +282,33 @@ textarea:focus { border-color: var(--accent); }
 }
 .switch .moon { left: -26px; }
 .switch .sun { right: -26px; }
+
+
+/* system alert messages */
+.msg-row.system .bubble {
+  background: #444;
+  border: 1px dashed #888;
+  color: #fff;
+  font-style: italic;
+}
+
+/* thinking bubble between messages */
+.thinking-cloud {
+  padding: 12px 16px;
+  background: var(--bubble);
+  border: 1px solid var(--bubble-border);
+  border-radius: 16px;
+  display: flex;
+  gap: 6px;
+  width: max-content;
+  margin-left: 55px;
+}
+.thinking-cloud .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text);
+  animation: blinkDots 1.3s infinite ease-in-out;
+}
+.thinking-cloud .dot:nth-child(2) { animation-delay: .2s; }
+.thinking-cloud .dot:nth-child(3) { animation-delay: .4s; }

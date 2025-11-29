@@ -14,21 +14,25 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [typingMessage, setTypingMessage] = useState("");
   const [showToggleMsg, setShowToggleMsg] = useState(false);
+
+  const [backendDown, setBackendDown] = useState(false); // NEW
   const chatEndRef = useRef(null);
 
+  /* Load Chat */
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
   }, []);
-
   useEffect(() => {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
   }, [messages]);
 
+  /* Scroll bottom */
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typingMessage]);
 
+  /* Auto textarea resize */
   useEffect(() => {
     const t = document.getElementById("chatbox");
     if (t) {
@@ -37,11 +41,15 @@ export default function App() {
     }
   }, [input]);
 
+  /* Wake backend immediately on start */
+  useEffect(() => {
+    axios.get("https://chatppt-backend.onrender.com/ping/").catch(() => {});
+  }, []);
+
   const timeNow = () =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  let retrying = false;
-
+  /* SEND MESSAGE */
   const sendMessage = async () => {
     if (!input && !imageBase64) return;
 
@@ -52,42 +60,62 @@ export default function App() {
       time: timeNow(),
     };
 
-    setMessages((prev) => [...prev, newMsg]);
+    setMessages((p) => [...p, newMsg]);
     setInput("");
     setImagePreview(null);
     setImageBase64(null);
     setLoading(true);
 
     try {
+      // 🔥 Force wake backend
+      await axios.get("https://chatppt-backend.onrender.com/ping/");
+
       const res = await axios.post(API_URL, {
         message: newMsg.content,
         context: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
         image_base64: newMsg.image,
       });
 
+      setBackendDown(false);
       typeBotMessage(res.data.answer);
     } catch {
-      if (!retrying) {
-        retrying = true;
+      if (!backendDown) {
+        setBackendDown(true);
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: "⚠ Server slow — retrying…", time: timeNow() },
+          { role: "system", content: "🔴 Backend offline — retrying…", time: timeNow() },
         ]);
-        setTimeout(sendMessage, 1500);
+
+        retryPing();
       } else {
         typeBotMessage("⚠ Backend failed. Try again later.");
       }
     }
   };
 
+  /* AUTO CHECK BACKEND UNTIL IT RETURNS */
+  const retryPing = () => {
+    const interval = setInterval(async () => {
+      try {
+        await axios.get("https://chatppt-backend.onrender.com/ping/");
+        clearInterval(interval);
+
+        setBackendDown(false);
+        setMessages((prev) => [
+          ...prev,
+          { role: "system", content: "🟢 Backend is online — you can chat now 🚀", time: timeNow() },
+        ]);
+      } catch {}
+    }, 5000);
+  };
+
+  /* TYPE BOT MESSAGE */
   const typeBotMessage = (text) => {
     setLoading(false);
     setTypingMessage("");
     let i = 0;
-    const speed = 17;
-
     const interval = setInterval(() => {
-      setTypingMessage((prev) => prev + text.charAt(i));
+      setTypingMessage((p) => p + text.charAt(i));
       i++;
       if (i === text.length) {
         clearInterval(interval);
@@ -97,9 +125,10 @@ export default function App() {
         ]);
         setTypingMessage("");
       }
-    }, speed);
+    }, 17);
   };
 
+  /* Image Upload */
   const handleUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -121,23 +150,18 @@ export default function App() {
     <div className="app">
       <header className="header">
         <div className="title">ChatPPT 🤖 Serious AI</div>
-
         <div className="theme-switch">
-          <label htmlFor="">Cool🧊</label>
+          <label>Cool🧊</label>
           <label className="switch">
-            
             <input type="checkbox" onClick={showToggleWarning} />
-            
             <span className="slider"></span>
-            
           </label>
-          <label htmlFor="">Hans❤️‍🩹</label>
-
+          <label>Hans❤️‍🩹</label>
         </div>
       </header>
 
       {showToggleMsg && (
-        <div className="toggle-cloud">⚠ Under construction — don’t play with this </div>
+        <div className="toggle-cloud">⚠ Under construction — don’t play with this</div>
       )}
 
       <div className="chat">
@@ -160,15 +184,14 @@ export default function App() {
           </div>
         ))}
 
+        {/* Thinking gap cloud */}
         {loading && typingMessage === "" && (
-          <div className="msg-row assistant">
-            <img className="avatar" src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png" alt="" />
-            <div className="typing-dots">
-              <span></span><span></span><span></span>
-            </div>
+          <div className="thinking-cloud">
+            <span className="dot"></span><span className="dot"></span><span className="dot"></span>
           </div>
         )}
 
+        {/* Typewriter */}
         {typingMessage && (
           <div className="msg-row assistant">
             <img className="avatar" src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png" alt="" />
@@ -202,5 +225,3 @@ export default function App() {
     </div>
   );
 }
-
-//
