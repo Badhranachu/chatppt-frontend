@@ -123,14 +123,15 @@ export default function App() {
         <div className="title">ChatPPT 🤖 Serious AI</div>
 
         <div className="theme-switch">
-
+          <label htmlFor="">day</label>
           <label className="switch">
             
             <input type="checkbox" onClick={showToggleWarning} />
-            <label htmlFor="">day</label>
+            
             <span className="slider"></span>
-            <label htmlFor="">afternoon</label>
+            
           </label>
+          <label htmlFor="">afternoon</label>
 
         </div>
       </header>
