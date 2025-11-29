@@ -120,18 +120,22 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <div className="title">ChatPPT 🤖 Psycho-Sarcastic AI</div>
+        <div className="title">ChatPPT 🤖 Serious AI</div>
 
         <div className="theme-switch">
+
           <label className="switch">
+            day
             <input type="checkbox" onClick={showToggleWarning} />
             <span className="slider"></span>
+            afternoon
           </label>
+
         </div>
       </header>
 
       {showToggleMsg && (
-        <div className="toggle-cloud">⚠ Under construction — don’t play with this 😑</div>
+        <div className="toggle-cloud">⚠ Under construction — don’t play with this </div>
       )}
 
       <div className="chat">
