@@ -14,8 +14,9 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [typingMessage, setTypingMessage] = useState("");
   const [showToggleMsg, setShowToggleMsg] = useState(false);
-  const [backendOnline, setBackendOnline] = useState(true);
   const chatEndRef = useRef(null);
+
+  let retrying = false;
 
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
@@ -41,8 +42,6 @@ export default function App() {
   const timeNow = () =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-  let retrying = false;
-
   const sendMessage = async () => {
     if (!input && !imageBase64) return;
 
@@ -60,26 +59,22 @@ export default function App() {
     setLoading(true);
 
     try {
-      // warm backend
+      // Warm backend first
       await axios.get("https://chatppt-backend.onrender.com/ping/");
 
-      // 🔥 FIXED: always POST — never converted to GET
-      const res = await axios({
-        method: "post",
-        url: API_URL,
-        data: {
-          message: newMsg.content,
-          context: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
-          image_base64: newMsg.image,
-        },
+      const res = await axios.post(API_URL, {
+        message: newMsg.content,
+        context: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
+        image_base64: newMsg.image,
       });
 
-      setBackendOnline(true);
+      retrying = false;
       typeBotMessage(res.data.answer);
     } catch {
+      setLoading(false);
+
       if (!retrying) {
         retrying = true;
-        setBackendOnline(false);
         setMessages((prev) => [
           ...prev,
           {
@@ -89,12 +84,12 @@ export default function App() {
           },
         ]);
 
-        // retry every 3 seconds until backend comes back
+        // Retry every 3s until backend restores
         const interval = setInterval(async () => {
           try {
             await axios.get("https://chatppt-backend.onrender.com/ping/");
             clearInterval(interval);
-            setBackendOnline(true);
+            retrying = false;
             setMessages((prev) => [
               ...prev,
               {
