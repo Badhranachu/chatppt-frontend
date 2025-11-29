@@ -250,3 +250,35 @@ textarea:focus { border-color: var(--accent); }
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+
+/* thinking cloud between messages */
+.thinking-cloud {
+  padding: 12px 16px;
+  background: var(--bubble);
+  border: 1px solid var(--bubble-border);
+  border-radius: 16px;
+  display: flex;
+  gap: 4px;
+  font-size: 15px;
+  align-items: center;
+  animation: fade 0.25s ease;
+}
+
+.thinking-cloud .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text);
+  animation: blinkDots 1.3s infinite ease-in-out;
+}
+
+/* toggle emojis */
+.switch .emoji {
+  font-size: 16px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.switch .moon { left: -26px; }
+.switch .sun { right: -26px; }

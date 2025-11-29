@@ -16,7 +16,6 @@ export default function App() {
   const [showToggleMsg, setShowToggleMsg] = useState(false);
   const chatEndRef = useRef(null);
 
-  /* Load saved chat */
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
@@ -26,12 +25,10 @@ export default function App() {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
   }, [messages]);
 
-  /* Auto scroll */
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typingMessage]);
 
-  /* Auto textarea resize */
   useEffect(() => {
     const t = document.getElementById("chatbox");
     if (t) {
@@ -72,27 +69,21 @@ export default function App() {
     } catch (err) {
       if (!retrying) {
         retrying = true;
-
-        // retry message bubble
         setMessages((prev) => [
           ...prev,
           { role: "assistant", content: "⚠ Server slow — retrying…", time: timeNow() },
         ]);
-
-        
+        setTimeout(() => sendMessage(), 1600);
       } else {
         typeBotMessage("⚠ Backend failed. Try again later.");
       }
     }
   };
 
-  /* Typewriter animation */
   const typeBotMessage = (text) => {
     setLoading(false);
     setTypingMessage("");
     let i = 0;
-    const speed = 17;
-
     const interval = setInterval(() => {
       setTypingMessage((p) => p + text.charAt(i));
       i++;
@@ -104,10 +95,9 @@ export default function App() {
         ]);
         setTypingMessage("");
       }
-    }, speed);
+    }, 17);
   };
 
-  /* Image upload */
   const handleUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -120,7 +110,6 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
-  /* Fake toggle — only shows message */
   const showToggleWarning = () => {
     setShowToggleMsg(true);
     setTimeout(() => setShowToggleMsg(false), 3000);
@@ -128,15 +117,16 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* HEADER */}
       <header className="header">
         <div className="title">ChatPPT 🤖 Psycho-Sarcastic AI</div>
 
-        {/* center toggle — static */}
+        {/* Toggle with 🌙 and ☀️ */}
         <div className="theme-switch">
           <label className="switch">
+            <span className="emoji moon">🌙</span>
             <input type="checkbox" onClick={showToggleWarning} />
             <span className="slider"></span>
+            <span className="emoji sun">☀️</span>
           </label>
         </div>
       </header>
@@ -147,7 +137,6 @@ export default function App() {
         </div>
       )}
 
-      {/* CHAT */}
       <div className="chat">
         {messages.map((m, idx) => (
           <div key={idx} className={`msg-row ${m.role}`}>
@@ -168,7 +157,22 @@ export default function App() {
           </div>
         ))}
 
-        {/* TYPING ANIMATION */}
+        {/* "THINKING" GAP ANIMATION */}
+        {loading && !typingMessage && (
+          <div className="msg-row assistant">
+            <img
+              className="avatar"
+              src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
+              alt=""
+            />
+            <div className="thinking-cloud">
+              💭 chatppt is thinking…
+              <span className="dot"></span><span className="dot"></span><span className="dot"></span>
+            </div>
+          </div>
+        )}
+
+        {/* TYPEWRITER RESPONSE */}
         {typingMessage && (
           <div className="msg-row assistant">
             <img
@@ -186,13 +190,13 @@ export default function App() {
         <div ref={chatEndRef}></div>
       </div>
 
-      {/* INPUT AREA */}
       <div className="input-area">
         {imagePreview && <img src={imagePreview} className="preview" />}
         <label className="upload-btn">
           📎
           <input type="file" accept="image/*" onChange={handleUpload} />
         </label>
+
         <textarea
           id="chatbox"
           placeholder="Message…"
@@ -200,6 +204,7 @@ export default function App() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
         />
+
         <button className="send" onClick={sendMessage} disabled={loading}>
           ➤
         </button>
