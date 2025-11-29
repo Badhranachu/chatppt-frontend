@@ -125,10 +125,11 @@ export default function App() {
         <div className="theme-switch">
 
           <label className="switch">
-            day
+            
             <input type="checkbox" onClick={showToggleWarning} />
+            <label htmlFor="">day</label>
             <span className="slider"></span>
-            afternoon
+            <label htmlFor="">afternoon</label>
           </label>
 
         </div>
