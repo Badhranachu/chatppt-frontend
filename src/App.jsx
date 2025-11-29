@@ -52,7 +52,7 @@ export default function App() {
       time: timeNow(),
     };
 
-    setMessages((p) => [...p, newMsg]);
+    setMessages((prev) => [...prev, newMsg]);
     setInput("");
     setImagePreview(null);
     setImageBase64(null);
@@ -66,14 +66,14 @@ export default function App() {
       });
 
       typeBotMessage(res.data.answer);
-    } catch (err) {
+    } catch {
       if (!retrying) {
         retrying = true;
         setMessages((prev) => [
           ...prev,
           { role: "assistant", content: "⚠ Server slow — retrying…", time: timeNow() },
         ]);
-        setTimeout(() => sendMessage(), 1600);
+        setTimeout(sendMessage, 1500);
       } else {
         typeBotMessage("⚠ Backend failed. Try again later.");
       }
@@ -84,8 +84,10 @@ export default function App() {
     setLoading(false);
     setTypingMessage("");
     let i = 0;
+    const speed = 17;
+
     const interval = setInterval(() => {
-      setTypingMessage((p) => p + text.charAt(i));
+      setTypingMessage((prev) => prev + text.charAt(i));
       i++;
       if (i === text.length) {
         clearInterval(interval);
@@ -95,7 +97,7 @@ export default function App() {
         ]);
         setTypingMessage("");
       }
-    }, 17);
+    }, speed);
   };
 
   const handleUpload = (e) => {
@@ -120,21 +122,16 @@ export default function App() {
       <header className="header">
         <div className="title">ChatPPT 🤖 Psycho-Sarcastic AI</div>
 
-        {/* Toggle with 🌙 and ☀️ */}
         <div className="theme-switch">
           <label className="switch">
-            <span className="emoji moon">🌙</span>
             <input type="checkbox" onClick={showToggleWarning} />
             <span className="slider"></span>
-            <span className="emoji sun">☀️</span>
           </label>
         </div>
       </header>
 
       {showToggleMsg && (
-        <div className="toggle-cloud">
-          ⚠ Under construction — don’t play with this 😑
-        </div>
+        <div className="toggle-cloud">⚠ Under construction — don’t play with this 😑</div>
       )}
 
       <div className="chat">
@@ -157,29 +154,18 @@ export default function App() {
           </div>
         ))}
 
-        {/* "THINKING" GAP ANIMATION */}
-        {loading && !typingMessage && (
+        {loading && typingMessage === "" && (
           <div className="msg-row assistant">
-            <img
-              className="avatar"
-              src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
-              alt=""
-            />
-            <div className="thinking-cloud">
-              💭 chatppt is thinking…
-              <span className="dot"></span><span className="dot"></span><span className="dot"></span>
+            <img className="avatar" src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png" alt="" />
+            <div className="typing-dots">
+              <span></span><span></span><span></span>
             </div>
           </div>
         )}
 
-        {/* TYPEWRITER RESPONSE */}
         {typingMessage && (
           <div className="msg-row assistant">
-            <img
-              className="avatar"
-              src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
-              alt=""
-            />
+            <img className="avatar" src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png" alt="" />
             <div className="bubble">
               {typingMessage}
               <span className="cursor"></span>
@@ -196,7 +182,6 @@ export default function App() {
           📎
           <input type="file" accept="image/*" onChange={handleUpload} />
         </label>
-
         <textarea
           id="chatbox"
           placeholder="Message…"
@@ -204,7 +189,6 @@ export default function App() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
         />
-
         <button className="send" onClick={sendMessage} disabled={loading}>
           ➤
         </button>
