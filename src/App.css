@@ -4,7 +4,7 @@ html, body {
   padding: 0;
   height: 100%;
   background: var(--bg);
-  overflow: hidden;
+  overflow: auto;
 }
 
 #root {
@@ -312,3 +312,78 @@ textarea:focus { border-color: var(--accent); }
 }
 .thinking-cloud .dot:nth-child(2) { animation-delay: .2s; }
 .thinking-cloud .dot:nth-child(3) { animation-delay: .4s; }
+
+
+/* ============== PHONE (below 600px) ============== */
+@media (max-width: 600px) {
+  .header {
+    padding: 10px 14px;
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+  }
+
+  .title {
+    position: static;
+    margin-bottom: 6px;
+  }
+
+  .chat {
+    padding: 14px 12px 110px;
+  }
+
+  .msg-row {
+    max-width: 100%;
+  }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+  }
+
+  .bubble {
+    font-size: 14px;
+    padding: 10px 13px;
+  }
+
+  .input-area {
+    padding: 10px 12px;
+    gap: 6px;
+  }
+
+  textarea {
+    font-size: 14px;
+    max-height: 100px;
+  }
+
+  .send {
+    font-size: 16px;
+    padding: 8px 12px;
+  }
+}
+
+/* ============== TABLET (600px – 992px) ============== */
+@media (min-width: 600px) and (max-width: 992px) {
+  .chat {
+    padding: 18px 18px 110px;
+  }
+
+  .msg-row {
+    max-width: 85%;
+  }
+
+  textarea {
+    max-height: 130px;
+  }
+}
+
+/* ============== LAPTOP / DESKTOP (992px+) ============== */
+@media (min-width: 992px) {
+  .chat {
+    padding: 22px 22px 92px;
+  }
+
+  .msg-row {
+    max-width: 75%;
+  }
+}
