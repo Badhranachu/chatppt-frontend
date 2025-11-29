@@ -3,7 +3,7 @@ import axios from "axios";
 import "./App.css";
 import "./theme.css";
 
-const API_URL = "https://chatppt-backend.onrender.com/api/chat/";
+const API_URL = "https://chatppt-backend-production.up.railway.app/api/chat/";
 const LOCAL_KEY = "chatppt_chats_v1";
 
 export default function App() {
@@ -60,7 +60,7 @@ export default function App() {
 
   try {
     // 1️⃣ Wake backend
-    await axios.get("https://chatppt-backend.onrender.com/ping/");
+    await axios.get("https://chatppt-backend-production.up.railway.app/ping/");
     await new Promise((resolve) => setTimeout(resolve, 3000)); // 🔥 wait 3 sec
 
     // 2️⃣ Now send actual chat
