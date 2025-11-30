@@ -14,15 +14,14 @@ export default function App() {
   const [theme, setTheme] = useState("ambi");
   const chatEndRef = useRef(null);
 
-  // 🔊 audio refs (no looping)
+  // Audio refs
   const ambiRef = useRef(new Audio("/media/ambi.mp3"));
   const annyanRef = useRef(new Audio("/media/annyan.mp3"));
 
-  // 🔓 unlock audio only after first click (fix loop when server stops / tab close)
+  // Unlock audio (user must click once)
   useEffect(() => {
     const unlock = () => {
-      ["ambi", "annyan"].forEach((t) => {
-        const a = t === "ambi" ? ambiRef.current : annyanRef.current;
+      [ambiRef.current, annyanRef.current].forEach(a => {
         a.play().catch(() => {});
         a.pause();
         a.currentTime = 0;
@@ -32,21 +31,18 @@ export default function App() {
     window.addEventListener("click", unlock);
   }, []);
 
-  // 🟢 play Ambi once when app first opens
+  // Play Ambi after refresh (once unlocked)
   useEffect(() => {
-    const ambi = ambiRef.current;
-    ambi.loop = false;
-    ambi.currentTime = 0;
-    ambi.play().catch(() => {});
+    ambiRef.current.loop = false;
+    ambiRef.current.currentTime = 0;
+    ambiRef.current.play().catch(() => {});
   }, []);
 
-  // 🛑 Stop music when leaving app or page reload
+  // Stop all music on exit
   useEffect(() => {
     return () => {
       ambiRef.current.pause();
       annyanRef.current.pause();
-      ambiRef.current.currentTime = 0;
-      annyanRef.current.currentTime = 0;
     };
   }, []);
 
@@ -56,7 +52,7 @@ export default function App() {
     if (saved) setMessages(JSON.parse(saved));
   }, []);
 
-  // Save messages
+  // Save every update
   useEffect(() => {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
   }, [messages]);
@@ -70,26 +66,17 @@ export default function App() {
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   const sendMessage = async () => {
-    if (!input) return;
+    if (!input.trim()) return;
 
-    const newMsg = {
-      role: "user",
-      content: input,
-      time: timeNow(),
-    };
-
-    setMessages((prev) => [...prev, newMsg]);
+    const newMsg = { role: "user", content: input, time: timeNow() };
+    setMessages(p => [...p, newMsg]);
     setInput("");
     setLoading(true);
 
-    const recent = messages.slice(-5).map((m) => `${m.role}: ${m.content}`).join("\n");
+    const ctx = messages.slice(-5).map(m => `${m.role}: ${m.content}`).join("\n");
 
     try {
-      const res = await axios.post(API_URL, {
-        message: newMsg.content,
-        context: recent,
-      });
-
+      const res = await axios.post(API_URL, { message: newMsg.content, context: ctx });
       typeBotMessage(res.data.answer);
     } catch {
       typeBotMessage("⚠ Something went wrong — try again.");
@@ -100,21 +87,19 @@ export default function App() {
   const typeBotMessage = (text) => {
     setTypingMessage("");
     let i = 0;
-    const speed = 17;
-
     const interval = setInterval(() => {
-      setTypingMessage((prev) => prev + text.charAt(i));
+      setTypingMessage(p => p + text.charAt(i));
       i++;
       if (i === text.length) {
         clearInterval(interval);
-        setMessages((prev) => [...prev, { role: "assistant", content: text, time: timeNow() }]);
         setTypingMessage("");
+        setMessages(p => [...p, { role: "assistant", content: text, time: timeNow() }]);
         setLoading(false);
       }
-    }, speed);
+    }, 17);
   };
 
-  // 🎧 theme switch — one-time play
+  // Theme switch
   const handleTheme = () => {
     const ambi = ambiRef.current;
     const annyan = annyanRef.current;
@@ -122,16 +107,12 @@ export default function App() {
     if (theme === "ambi") {
       ambi.pause();
       ambi.currentTime = 0;
-
-      annyan.loop = false;
       annyan.currentTime = 0;
       annyan.play().catch(() => {});
       setTheme("annyan");
     } else {
       annyan.pause();
       annyan.currentTime = 0;
-
-      ambi.loop = false;
       ambi.currentTime = 0;
       ambi.play().catch(() => {});
       setTheme("ambi");
@@ -140,34 +121,27 @@ export default function App() {
 
   return (
     <div className={`app ${theme}`}>
-      {/* HEADER ALWAYS ON TOP */}
+      {/* HEADER */}
       <header className="header">
-<div className={`title ${theme}`}>
-  {theme === "ambi" ? "ChatPPT 🌀" : "ChatPPT 🤖🩲 Serious AI"}
-</div>
+        <div className={`title ${theme}`}>
+          {theme === "ambi" ? "ChatPPT 🌀" : "ChatPPT 🤖🩲 Serious AI"}
+        </div>
 
         <div className="theme-switch">
-  <img src="/media/ambi-toggle.jpg" className="toggle-icon left" alt="" />
-  
-  <label className="switch">
-    <input
-     type="checkbox" onChange={handleTheme} checked={theme === "annyan"} />
-    <span className="slider"></span>
-  </label>
-
-  <img src="/media/annyan-toggle.jpg" className="toggle-icon right" alt="" />
-</div>
-
+          <img src="/media/ambi-toggle.jpg" className="toggle-icon left" alt="" />
+          <label className="switch">
+            <input type="checkbox" onChange={handleTheme} checked={theme === "annyan"} />
+            <span className="slider"></span>
+          </label>
+          <img src="/media/annyan-toggle.jpg" className="toggle-icon right" alt="" />
+        </div>
       </header>
 
-      {/* CHAT */}
+      {/* SCROLL CHAT AREA */}
       <div className="chat">
         {messages.map((m, idx) => (
           <div key={idx} className={`msg-row ${m.role}`}>
-            <img className="avatar"
-              src={m.role === "user" ? "/media/annyan.jpeg" : "/media/ambi.jpeg"}
-              alt=""
-            />
+            <img className="avatar" src={m.role === "user" ? "/media/annyan.jpeg" : "/media/ambi.jpeg"} alt="" />
             <div className="bubble">
               <div>{m.content}</div>
               <div className="time">{m.time}</div>
@@ -187,11 +161,10 @@ export default function App() {
         <div ref={chatEndRef}></div>
       </div>
 
-      {/* INPUT AREA */}
+      {/* FIXED INPUT BAR */}
       <div className="input-area">
         <label className="upload-btn">📎</label>
         <textarea
-          id="chatbox"
           placeholder="Message…"
           value={input}
           onChange={(e) => setInput(e.target.value)}

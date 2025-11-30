@@ -1,24 +1,34 @@
+/* ========= GLOBAL ========= */
 html, body {
   margin: 0;
   padding: 0;
+  background: var(--bg);
   height: 100%;
-  overflow: hidden;
+  width: 100%;
+  overflow: hidden;           /* no window scroll, only chat scrolls */
   font-family: system-ui, sans-serif;
 }
 
-/* Background */
+#root {
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg);
+}
+
+/* ========= MAIN APP BACKGROUND ========= */
 .app {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;              /* ✅ fixed to viewport so .chat can scroll */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
   transition: background-image 0.6s ease-in-out;
+  position: relative;
 }
 
-/* BG images */
+/* BG IMAGES */
 @media (max-width: 1000px) {
   .app.ambi  { background-image: url("/media/ambi.jpeg"); }
   .app.annyan { background-image: url("/media/annyan.jpeg"); }
@@ -28,7 +38,7 @@ html, body {
   .app.annyan { background-image: url("/media/annyan-lap.png"); }
 }
 
-/* Background blur only */
+/* Blur overlay */
 .app::after {
   content: "";
   position: absolute;
@@ -39,13 +49,15 @@ html, body {
   z-index: 0;
 }
 
-/* UI above blur */
-.header, .chat, .input-area {
+/* Everything above blur */
+.header,
+.chat,
+.input-area {
   position: relative;
   z-index: 2;
 }
 
-/* Header */
+/* ========= HEADER ========= */
 .header {
   width: 100%;
   height: 62px;
@@ -53,79 +65,67 @@ html, body {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 99;
+  z-index: 999;
   display: flex;
   justify-content: center;
   align-items: center;
+  backdrop-filter: blur(5px);
   background: rgba(0,0,0,0.25);
-  backdrop-filter: blur(4px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 /* Title base */
 .title {
   position: absolute;
   left: 24px;
-  transition: all 0.45s ease;
-  transform-origin: left center;
+  transform-origin: left;
   white-space: nowrap;
   font-weight: 700;
+  transition: all 0.45s ease;
 }
 
-/* Ambi text style */
+/* AMBI title */
 .title.ambi {
-  font-size: 27px;
-  letter-spacing: 1.8px;
+  font-size: 28px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
   color: #ffffff;
-  filter: drop-shadow(0 0 6px rgba(255, 150, 200, 0.65));
+  filter: drop-shadow(0 0 6px rgba(160, 220, 255, 0.7));
 }
 
-/* Annayan text style (animated shrink) */
+/* ANNAYAN title */
 .title.annyan {
-  font-size: 22px;
+  font-size: 21px;
   color: #ffb1b1;
-  letter-spacing: 0.8px;
   animation: shrinkDrama 0.45s ease;
 }
+
 @keyframes shrinkDrama {
-  0%   { transform: scale(1.28) translateX(6px); opacity: 0.2; }
-  50%  { transform: scale(0.82) translateX(3px); opacity: 0.7; }
-  100% { transform: scale(1) translateX(0px); opacity: 1; }
+  0%   { transform: scale(1.3) translateX(8px); opacity: 0.2; }
+  50%  { transform: scale(0.8) translateX(3px); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
-/* Toggle row */
+/* ========= TOGGLE ========= */
 .theme-switch {
   display: flex;
   align-items: center;
   gap: 14px;
 }
 
-/* Toggle icons – always bright */
-.toggle-icon {
-  width: 33px;
-  height: 33px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid rgba(255,255,255,0.55);
-  box-shadow: 0 0 6px rgba(0,0,0,0.45);
-  backdrop-filter: blur(2px);
-  transition: 0.2s;
-  user-select: none;
-}
-
-/* Slider */
 .switch {
   width: 55px;
   height: 26px;
   position: relative;
 }
 .switch input { display: none; }
+
 .slider {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.33);   /* 🔥 matches website background */
+  background: rgba(255,255,255,0.35);
   border-radius: 30px;
   cursor: pointer;
-  backdrop-filter: blur(4px);
 }
 .slider:before {
   content: "";
@@ -133,7 +133,7 @@ html, body {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.85);
+  background: white;
   top: 3px;
   left: 3px;
   transition: 0.28s;
@@ -142,18 +142,36 @@ html, body {
   transform: translateX(28px);
 }
 
-/* Chat section */
+/* Toggle avatars */
+.toggle-icon {
+  width: 33px;
+  height: 33px;
+  border-radius: 50%;
+  object-fit: cover;
+  user-select: none;
+  transition: 0.25s;
+}
+
+/* keep both bright */
+.app .toggle-icon.left,
+.app .toggle-icon.right {
+  opacity: 1;
+  filter: none;
+}
+
+/* ========= CHAT AREA ========= */
 .chat {
   flex: 1;
-  overflow-y: auto;
-  margin-top: 62px;
-  padding: 24px 22px 110px;
+  overflow-y: auto;      /* ✅ scroll happens here */
+  overflow-x: hidden;
+  margin-top: 62px;      /* space for header */
+  padding: 25px 22px 110px; /* bottom space for input bar */
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
-/* Messages */
+/* Message rows */
 .msg-row {
   display: flex;
   width: 100%;
@@ -168,51 +186,82 @@ html, body {
   object-fit: cover;
 }
 
+/* ========= BUBBLES ========= */
 .bubble {
   max-width: 72%;
   padding: 12px 16px;
   font-size: 15px;
-  border-radius: 16px;
-  background: rgba(0,0,0,0.55);
-  color: white;
-  border: 1px solid rgba(255,255,255,0.18);
-  backdrop-filter: saturate(140%);
+  border-radius: 18px;
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(3px) saturate(150%);
 }
+
 .msg-row.user .bubble {
-  background: rgba(0,110,255,0.85);
+  background: #006effd9;
+  color: #fff;
+}
+
+/* make sure assistant bubble respects theme vars too */
+.msg-row.assistant .bubble {
+  background: #0000008c;
+  color: white;
 }
 
 .time {
   font-size: 12px;
-  opacity: .75;
-  margin-top: 4px;
+  opacity: 0.75;
+  margin-top: 5px;
   text-align: right;
 }
 
-/* Input bar */
+/* ========= ANNAYAN THEME OVERRIDES ========= */
+.app.annyan .bubble {
+  background: rgba(120,0,0,0.55);
+  border: 1px solid rgba(255,90,90,0.4);
+}
+.app.annyan .msg-row.user .bubble {
+  background: rgba(200,0,0,0.75);
+}
+.app.annyan .send {
+  background: #b30017;
+}
+
+/* ========= INPUT BAR (FIXED) ========= */
 .input-area {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
   display: flex;
   gap: 10px;
-  padding: 14px 18px;
   align-items: center;
-  background: rgba(0,0,0,0.35);
-  border-top: 1px solid rgba(255,255,255,0.2);
-  backdrop-filter: blur(6px) saturate(170%);
+  padding: 14px 18px;
+  background: rgba(0,0,0,0.32);
+  border-top: 1px solid rgba(255,255,255,0.18);
+  backdrop-filter: blur(6px);
+  z-index: 999;
 }
 
+/* Textarea */
 textarea {
   flex: 1;
-  padding: 12px 15px;
+  resize: none;
+  padding: 10px 14px;
   font-size: 15px;
   border-radius: 12px;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.28);
+  background: rgba(255,255,255,0.10);
   color: white;
+  border: 1px solid rgba(255,255,255,0.25);
   outline: none;
+  max-height: 160px;
+  overflow-y: auto;
 }
 
+/* Send button */
 .send {
-  background: #3b82f6;
+  background: var(--accent);    /* from theme.css */
   border-radius: 12px;
   padding: 11px 15px;
   font-size: 19px;
@@ -221,7 +270,9 @@ textarea {
   color: white;
 }
 
+/* Attach icon */
 .upload-btn {
   font-size: 22px;
   cursor: pointer;
+  user-select: none;
 }
