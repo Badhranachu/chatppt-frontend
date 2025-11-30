@@ -138,11 +138,7 @@ export default function App() {
           <div key={idx} className={`msg-row ${m.role}`}>
             <img
               className="avatar"
-              src={
-                m.role === "user"
-                  ? "https://cdn-icons-png.flaticon.com/512/1946/1946429.png"
-                  : "https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
-              }
+              src={m.role === "user" ? "/media/nakul.jpeg" : "/media/sathyan.jpeg"}
               alt=""
             />
             <div className="bubble">
@@ -160,26 +156,16 @@ export default function App() {
 
         {loading && typingMessage === "" && (
           <div className="msg-row assistant">
-            <img
-              className="avatar"
-              src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
-              alt=""
-            />
+            <img className="avatar" src="/media/sathyan.jpeg" alt="" />
             <div className="typing-dots">
-              <span></span>
-              <span></span>
-              <span></span>
+              <span></span><span></span><span></span>
             </div>
           </div>
         )}
 
         {typingMessage && (
           <div className="msg-row assistant">
-            <img
-              className="avatar"
-              src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
-              alt=""
-            />
+            <img className="avatar" src="/media/sathyan.jpeg" alt="" />
             <div className="bubble">
               {typingMessage}
               <span className="cursor"></span>
