@@ -134,59 +134,61 @@ export default function App() {
       )}
 
       <div className="chat">
-        {messages.map((m, idx) => (
-          <div key={idx} className={`msg-row ${m.role}`}>
-            <img
-              className="avatar"
-              src={
-                m.role === "user"
-                  ? "/media/nakul.jpeg" // ✅ User is Nakul
-                  : "/media/sathyan.jpg" // ✅ Bot is Sathyan
-              }
-              alt=""
-            />
-            <div className="bubble">
-              <div className="text">{m.content}</div>
-              {m.image && (
-                <img
-                  src={`data:image/png;base64,${m.image}`}
-                  className="chat-img"
-                />
-              )}
-              <div className="time">{m.time}</div>
-            </div>
-          </div>
-        ))}
+        {messages.map((m, idx) => (
+          <div key={idx} className={`msg-row ${m.role}`}>
+            <img
+              className="avatar"
+              src={
+                m.role === "user"
+                  ? "https://cdn-icons-png.flaticon.com/512/1946/1946429.png"
+                  : "https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
+              }
+              alt=""
+            />
+            <div className="bubble">
+              <div className="text">{m.content}</div>
+              {m.image && (
+                <img
+                  src={`data:image/png;base64,${m.image}`}
+                  className="chat-img"
+                />
+              )}
+              <div className="time">{m.time}</div>
+            </div>
+          </div>
+        ))}
 
-        {/* Also update the typing indicators for the bot */}
-        {loading && typingMessage === "" && (
-          <div className="msg-row assistant">
-            <img
-              className="avatar"
-              src="/media/sathyan.jpg" // ✅ Bot typing image
-              alt=""
-            />
-            <div className="typing-dots">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </div>
-        )}
+        {loading && typingMessage === "" && (
+          <div className="msg-row assistant">
+            <img
+              className="avatar"
+              src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
+              alt=""
+            />
+            <div className="typing-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        )}
 
-        {typingMessage && (
-          <div className="msg-row assistant">
-            <img
-              className="avatar"
-              src="/media/sathyan.jpg" // ✅ Bot typing image
-              alt=""
-            />
-            <div className="bubble">
-              {typingMessage}
-              <span className="cursor"></span>
-            </div>
-          </div>
-        )}
+        {typingMessage && (
+          <div className="msg-row assistant">
+            <img
+              className="avatar"
+              src="https://cdn-icons-png.flaticon.com/512/4712/4712107.png"
+              alt=""
+            />
+            <div className="bubble">
+              {typingMessage}
+              <span className="cursor"></span>
+            </div>
+          </div>
+        )}
+
+        <div ref={chatEndRef}></div>
+      </div>
 
       <div className="input-area">
         {imagePreview && <img src={imagePreview} className="preview" />}
@@ -208,5 +210,3 @@ export default function App() {
     </div>
   );
 }
-
-//
