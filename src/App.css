@@ -121,7 +121,6 @@ html, body {
   height: 42px;
   border-radius: 50%;
   object-fit: cover;
-  filter: invert(100%) brightness(200%);
   border: 2px solid #3b82f6;
 }
 
