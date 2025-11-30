@@ -6,21 +6,51 @@ import "./theme.css";
 const API_URL = "https://chatppt-backend-production.up.railway.app/api/chat/";
 const LOCAL_KEY = "chatppt_chats_v1";
 
-// 🔊 audio object (fixed autoplay issue)
-const toggleMusic = new Audio("/media/switch.mp3");
-toggleMusic.volume = 0.9;
-
 export default function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [imageBase64, setImageBase64] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [typingMessage, setTypingMessage] = useState("");
-  const [theme, setTheme] = useState("ambi"); // ambi | annyan
+  const [theme, setTheme] = useState("ambi");
   const chatEndRef = useRef(null);
 
-  // Load saved chats
+  // 🔊 audio refs (no looping)
+  const ambiRef = useRef(new Audio("/media/ambi.mp3"));
+  const annyanRef = useRef(new Audio("/media/annyan.mp3"));
+
+  // 🔓 unlock audio only after first click (fix loop when server stops / tab close)
+  useEffect(() => {
+    const unlock = () => {
+      ["ambi", "annyan"].forEach((t) => {
+        const a = t === "ambi" ? ambiRef.current : annyanRef.current;
+        a.play().catch(() => {});
+        a.pause();
+        a.currentTime = 0;
+      });
+      window.removeEventListener("click", unlock);
+    };
+    window.addEventListener("click", unlock);
+  }, []);
+
+  // 🟢 play Ambi once when app first opens
+  useEffect(() => {
+    const ambi = ambiRef.current;
+    ambi.loop = false;
+    ambi.currentTime = 0;
+    ambi.play().catch(() => {});
+  }, []);
+
+  // 🛑 Stop music when leaving app or page reload
+  useEffect(() => {
+    return () => {
+      ambiRef.current.pause();
+      annyanRef.current.pause();
+      ambiRef.current.currentTime = 0;
+      annyanRef.current.currentTime = 0;
+    };
+  }, []);
+
+  // Load saved messages
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
@@ -31,136 +61,119 @@ export default function App() {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
   }, [messages]);
 
-  // Scroll bottom when messages come
+  // Auto scroll bottom
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typingMessage]);
-
-  // Auto expand textbox
-  useEffect(() => {
-    const t = document.getElementById("chatbox");
-    if (t) {
-      t.style.height = "auto";
-      t.style.height = t.scrollHeight + "px";
-    }
-  }, [input]);
 
   const timeNow = () =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   const sendMessage = async () => {
-    if (!input && !imageBase64) return;
+    if (!input) return;
 
     const newMsg = {
       role: "user",
-      content: input || "(Image)",
-      image: imageBase64,
+      content: input,
       time: timeNow(),
     };
 
-    setMessages((p) => [...p, newMsg]);
+    setMessages((prev) => [...prev, newMsg]);
     setInput("");
-    setImagePreview(null);
-    setImageBase64(null);
     setLoading(true);
 
-    const recentContext = messages.slice(-5)
-      .map((m) => `${m.role}: ${m.content}`)
-      .join("\n");
+    const recent = messages.slice(-5).map((m) => `${m.role}: ${m.content}`).join("\n");
 
     try {
       const res = await axios.post(API_URL, {
         message: newMsg.content,
-        context: recentContext,
-        image_base64: newMsg.image,
+        context: recent,
       });
 
       typeBotMessage(res.data.answer);
-    } catch (err) {
-      setLoading(false);
+    } catch {
       typeBotMessage("⚠ Something went wrong — try again.");
+      setLoading(false);
     }
   };
 
   const typeBotMessage = (text) => {
-    setLoading(false);
     setTypingMessage("");
     let i = 0;
+    const speed = 17;
+
     const interval = setInterval(() => {
       setTypingMessage((prev) => prev + text.charAt(i));
       i++;
       if (i === text.length) {
         clearInterval(interval);
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: text, time: timeNow() },
-        ]);
+        setMessages((prev) => [...prev, { role: "assistant", content: text, time: timeNow() }]);
         setTypingMessage("");
+        setLoading(false);
       }
-    }, 17);
+    }, speed);
   };
 
-  const handleUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result.split(",")[1];
-      setImageBase64(base64);
-      setImagePreview(reader.result);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // 🔥 background theme switch + audio
+  // 🎧 theme switch — one-time play
   const handleTheme = () => {
-    const next = theme === "ambi" ? "annyan" : "ambi";
-    setTheme(next);
+    const ambi = ambiRef.current;
+    const annyan = annyanRef.current;
 
-    // Chrome autoplay unlock
-    toggleMusic.currentTime = 0;
-    toggleMusic.play().catch(() => {});
+    if (theme === "ambi") {
+      ambi.pause();
+      ambi.currentTime = 0;
+
+      annyan.loop = false;
+      annyan.currentTime = 0;
+      annyan.play().catch(() => {});
+      setTheme("annyan");
+    } else {
+      annyan.pause();
+      annyan.currentTime = 0;
+
+      ambi.loop = false;
+      ambi.currentTime = 0;
+      ambi.play().catch(() => {});
+      setTheme("ambi");
+    }
   };
 
   return (
     <div className={`app ${theme}`}>
+      {/* HEADER ALWAYS ON TOP */}
       <header className="header">
-        <div className="title">ChatPPT 🤖 Serious AI</div>
+<div className={`title ${theme}`}>
+  {theme === "ambi" ? "ChatPPT 🌀" : "ChatPPT 🤖🩲 Serious AI"}
+</div>
 
         <div className="theme-switch">
-          <span className="side-label">Ambi</span>
-          <label className="switch">
-            <input type="checkbox" onChange={handleTheme} checked={theme === "annyan"} />
-            <span className="slider"></span>
-          </label>
-          <span className="side-label">Annayan</span>
-        </div>
+  <img src="/media/ambi-toggle.jpg" className="toggle-icon left" alt="" />
+  
+  <label className="switch">
+    <input
+     type="checkbox" onChange={handleTheme} checked={theme === "annyan"} />
+    <span className="slider"></span>
+  </label>
+
+  <img src="/media/annyan-toggle.jpg" className="toggle-icon right" alt="" />
+</div>
+
       </header>
 
+      {/* CHAT */}
       <div className="chat">
         {messages.map((m, idx) => (
           <div key={idx} className={`msg-row ${m.role}`}>
-            <img
-              className="avatar"
+            <img className="avatar"
               src={m.role === "user" ? "/media/annyan.jpeg" : "/media/ambi.jpeg"}
               alt=""
             />
             <div className="bubble">
-              <div className="text">{m.content}</div>
-              {m.image && <img src={`data:image/png;base64,${m.image}`} className="chat-img" />}
+              <div>{m.content}</div>
               <div className="time">{m.time}</div>
             </div>
           </div>
         ))}
-
-        {loading && typingMessage === "" && (
-          <div className="msg-row assistant">
-            <img className="avatar" src="/media/ambi.jpeg" alt="" />
-            <div className="typing-dots">
-              <span></span><span></span><span></span>
-            </div>
-          </div>
-        )}
 
         {typingMessage && (
           <div className="msg-row assistant">
@@ -171,16 +184,12 @@ export default function App() {
             </div>
           </div>
         )}
-
         <div ref={chatEndRef}></div>
       </div>
 
+      {/* INPUT AREA */}
       <div className="input-area">
-        {imagePreview && <img src={imagePreview} className="preview" />}
-        <label className="upload-btn">
-          📎
-          <input type="file" accept="image/*" onChange={handleUpload} />
-        </label>
+        <label className="upload-btn">📎</label>
         <textarea
           id="chatbox"
           placeholder="Message…"
@@ -188,9 +197,7 @@ export default function App() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
         />
-        <button className="send" onClick={sendMessage} disabled={loading}>
-          ➤
-        </button>
+        <button className="send" onClick={sendMessage} disabled={loading}>➤</button>
       </div>
     </div>
   );

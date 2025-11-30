@@ -1,10 +1,22 @@
 :root {
-  --bg: #0f1116;
-  --header: #111318;
-  --border: #262b35;
-  --text: #e5e7eb;
-  --bubble: #1b1f2a;
-  --bubble-border: #303544;
-  --textbox: #0b0d11;
   --accent: #3b82f6;
+}
+
+/* Anniyan dark mode */
+.app.annyan .bubble {
+  background: rgba(120, 0, 0, 0.55);
+  border: 1px solid rgba(255, 60, 60, 0.4);
+  box-shadow: 0 0 10px rgba(255, 60, 60, 0.25);
+}
+
+.app.annyan .msg-row.user .bubble {
+  background: rgba(200, 0, 0, 0.78);
+}
+
+.app.annyan .send {
+  background: #b00012;
+}
+
+.app.annyan .header {
+  background: rgba(120, 0, 0, 0.45);
 }

@@ -13,3 +13,18 @@ html, body {
   height: 100vh;
   background: var(--bg);
 }
+
+
+.msg-row.user .bubble {
+  background: var(--bubble-user);
+  color: #fff;
+}
+
+.msg-row.assistant .bubble {
+  background: var(--bubble-ai);
+  color: var(--text);
+}
+
+.send {
+  background: var(--accent);
+}
