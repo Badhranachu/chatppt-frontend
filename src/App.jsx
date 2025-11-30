@@ -123,19 +123,22 @@ export default function App() {
     <div className={`app ${theme}`}>
       {/* HEADER */}
       <header className="header">
-        <div className={`title ${theme}`}>
-          {theme === "ambi" ? "ChatPPT 🌀" : "ChatPPT 🤖🩲 Serious AI"}
-        </div>
+  {/* LEFT TITLE */}
+  <div className={`title ${theme}`}>
+    {theme === "ambi" ? "CHATPPT 🌀" : "ChatPPT 🤖🩲 Serious AI"}
+  </div>
 
-        <div className="theme-switch">
-          <img src="/media/ambi-toggle.jpg" className="toggle-icon left" alt="" />
-          <label className="switch">
-            <input type="checkbox" onChange={handleTheme} checked={theme === "annyan"} />
-            <span className="slider"></span>
-          </label>
-          <img src="/media/annyan-toggle.jpg" className="toggle-icon right" alt="" />
-        </div>
-      </header>
+  {/* RIGHT TOGGLE */}
+  <div className="theme-switch">
+    <img src="/media/ambi-toggle.jpg" className="toggle-icon left" alt="" />
+    <label className="switch">
+      <input type="checkbox" onChange={handleTheme} checked={theme === "annyan"} />
+      <span className="slider"></span>
+    </label>
+    <img src="/media/annyan-toggle.jpg" className="toggle-icon right" alt="" />
+  </div>
+</header>
+
 
       {/* SCROLL CHAT AREA */}
       <div className="chat">
