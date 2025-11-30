@@ -271,3 +271,30 @@ textarea {
   cursor: pointer;
   user-select: none;
 }
+
+
+.loader-screen {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: black;
+  color: white;
+  gap: 14px;
+  font-size: 20px;
+}
+
+.spinner {
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  border: 5px solid rgba(255,255,255,0.25);
+  border-top-color: #00aaff;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -12,13 +12,47 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [typingMessage, setTypingMessage] = useState("");
   const [theme, setTheme] = useState("ambi");
+  const [loaded, setLoaded] = useState(false);   // ⬅ NEW (loader screen)
   const chatEndRef = useRef(null);
 
   // Audio refs
   const ambiRef = useRef(new Audio("/media/ambi.mp3"));
   const annyanRef = useRef(new Audio("/media/annyan.mp3"));
 
-  // Unlock audio (user must click once)
+  /* ================= PRELOAD EVERYTHING FIRST ================= */
+  useEffect(() => {
+    const bgImgs = [
+      "/media/ambi.jpeg",
+      "/media/annyan.jpeg",
+      "/media/ambi-lap.png",
+      "/media/annyan-lap.png",
+      "/media/ambi-toggle.jpg",
+      "/media/annyan-toggle.jpg",
+      "/media/ambi.jpeg",
+      "/media/annyan.jpeg",
+    ];
+
+    const loadImage = src =>
+      new Promise(resolve => {
+        const img = new Image();
+        img.src = src;
+        img.onload = resolve;
+      });
+
+    const loadAudio = src =>
+      new Promise(resolve => {
+        const audio = new Audio(src);
+        audio.oncanplaythrough = resolve;
+      });
+
+    Promise.all([
+      ...bgImgs.map(loadImage),
+      loadAudio("/media/ambi.mp3"),
+      loadAudio("/media/annyan.mp3"),
+    ]).then(() => setLoaded(true));
+  }, []);
+
+  /* ================= UNLOCK SOUND AFTER FIRST CLICK ================= */
   useEffect(() => {
     const unlock = () => {
       [ambiRef.current, annyanRef.current].forEach(a => {
@@ -31,14 +65,15 @@ export default function App() {
     window.addEventListener("click", unlock);
   }, []);
 
-  // Play Ambi after refresh (once unlocked)
+  /* ================= PLAY AMBI ON FIRST LOAD ================= */
   useEffect(() => {
+    if (!loaded) return;
     ambiRef.current.loop = false;
     ambiRef.current.currentTime = 0;
     ambiRef.current.play().catch(() => {});
-  }, []);
+  }, [loaded]);
 
-  // Stop all music on exit
+  // Stop music when closing tab
   useEffect(() => {
     return () => {
       ambiRef.current.pause();
@@ -46,13 +81,12 @@ export default function App() {
     };
   }, []);
 
-  // Load saved messages
+  // Load / Save Chat
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
   }, []);
 
-  // Save every update
   useEffect(() => {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
   }, [messages]);
@@ -99,7 +133,7 @@ export default function App() {
     }, 17);
   };
 
-  // Theme switch
+  // Toggle theme
   const handleTheme = () => {
     const ambi = ambiRef.current;
     const annyan = annyanRef.current;
@@ -119,28 +153,35 @@ export default function App() {
     }
   };
 
+  /* =============== SHOW LOADER WHILE PRELOADING =============== */
+  if (!loaded) {
+    return (
+      <div className="loader-screen">
+        <div className="spinner"></div>
+        <p>Loading ChatPPT…</p>
+      </div>
+    );
+  }
+
   return (
     <div className={`app ${theme}`}>
       {/* HEADER */}
       <header className="header">
-  {/* LEFT TITLE */}
-  <div className={`title ${theme}`}>
-    {theme === "ambi" ? "CHATPPT 🌀" : "ChatPPT 🤖🩲 Serious AI"}
-  </div>
+        <div className={`title ${theme}`}>
+          {theme === "ambi" ? "CHATPPT 🌀" : "ChatPPT 🤖🩲 Serious AI"}
+        </div>
 
-  {/* RIGHT TOGGLE */}
-  <div className="theme-switch">
-    <img src="/media/ambi-toggle.jpg" className="toggle-icon left" alt="" />
-    <label className="switch">
-      <input type="checkbox" onChange={handleTheme} checked={theme === "annyan"} />
-      <span className="slider"></span>
-    </label>
-    <img src="/media/annyan-toggle.jpg" className="toggle-icon right" alt="" />
-  </div>
-</header>
+        <div className="theme-switch">
+          <img src="/media/ambi-toggle.jpg" className="toggle-icon left" alt="" />
+          <label className="switch">
+            <input type="checkbox" onChange={handleTheme} checked={theme === "annyan"} />
+            <span className="slider"></span>
+          </label>
+          <img src="/media/annyan-toggle.jpg" className="toggle-icon right" alt="" />
+        </div>
+      </header>
 
-
-      {/* SCROLL CHAT AREA */}
+      {/* CHAT */}
       <div className="chat">
         {messages.map((m, idx) => (
           <div key={idx} className={`msg-row ${m.role}`}>
@@ -157,14 +198,13 @@ export default function App() {
             <img className="avatar" src="/media/ambi.jpeg" alt="" />
             <div className="bubble">
               {typingMessage}
-              <span className="cursor"></span>
             </div>
           </div>
         )}
         <div ref={chatEndRef}></div>
       </div>
 
-      {/* FIXED INPUT BAR */}
+      {/* INPUT BAR */}
       <div className="input-area">
         <label className="upload-btn">📎</label>
         <textarea
