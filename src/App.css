@@ -7,61 +7,70 @@ html, body {
   font-family: system-ui, sans-serif;
 }
 
-/* Background Image — controlled by theme class on .app */
+/* FIX — background image stable */
 .app {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-size: cover;
+  background-size: cover; /* do not stretch */
   background-position: center;
   background-repeat: no-repeat;
-  transition: background-image 0.6s ease-in-out; /* 🔥 fade theme switch */
+  transition: background-image 0.6s ease-in-out;
   position: relative;
   color: var(--text);
 }
 
-/* ===== BACKGROUND IMAGES ===== */
-.app.ambi  { background-image: url("/media/ambi.jpeg"); }
-.app.annyan { background-image: url("/media/annyan.jpeg"); }
+/* 🔥 MOBILE BACKGROUND */
+@media (max-width: 1000px) {
+  .app.ambi  { background-image: url("/media/ambi.jpeg"); }
+  .app.annyan { background-image: url("/media/annyan.jpeg"); }
+}
 
-/* ===== SPARK PARTICLE EFFECTS 🔥 ===== */
+/* 🔥 LAPTOP BACKGROUND */
+@media (min-width: 1000px) {
+  .app.ambi  { background-image: url("/media/ambi-lap.png"); }
+  .app.annyan { background-image: url("/media/annyan-lap.png"); }
+}
+
+/* ⭐ Particle glow */
 .app::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   background-image:
-    radial-gradient(circle, rgba(255,255,255,0.25) 2px, transparent 2px),
-    radial-gradient(circle, rgba(255,255,255,0.18) 2px, transparent 2px);
+    radial-gradient(circle, rgba(255,255,255,0.15) 2px, transparent 2px),
+    radial-gradient(circle, rgba(255,255,255,0.10) 2px, transparent 2px);
   background-size: 120px 120px, 200px 200px;
-  animation: floatSpark 18s linear infinite;
-  opacity: 0.35;
+  animation: spark 18s linear infinite;
+  opacity: 0.25; /* 🔥 less blur/glow */
 }
-@keyframes floatSpark {
+@keyframes spark {
   from { background-position: 0 0, 0 0; }
   to { background-position: 600px 600px, -600px -600px; }
 }
 
-/* ===== HEADER ===== */
+/* HEADER */
 .header {
   width: 100%;
   padding: 14px 24px;
-  backdrop-filter: blur(12px);
-  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(6px); /* 🔥 reduced from 12px */
+  background: rgba(0, 0, 0, 0.22); /* 🔥 20% blur look */
   border-bottom: 1px solid rgba(255,255,255,0.1);
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
 }
+
 .title {
-  font-size: 21px;
-  font-weight: 700;
   position: absolute;
   left: 26px;
+  font-size: 21px;
+  font-weight: 700;
 }
 
-/* ===== TOGGLE ===== */
+/* THEME SWITCH */
 .theme-switch {
   display: flex;
   align-items: center;
@@ -70,7 +79,6 @@ html, body {
 .side-label {
   font-size: 15px;
   font-weight: 600;
-  text-shadow: 0 0 4px rgba(0,0,0,0.4);
 }
 
 .switch {
@@ -82,19 +90,18 @@ html, body {
 .slider {
   position: absolute;
   inset: 0;
-  background: rgba(255,255,255,0.35);
+  background: rgba(255, 255, 255, 0.35);
   border-radius: 30px;
   cursor: pointer;
-  transition: 0.28s;
 }
 .slider:before {
   content: "";
   position: absolute;
-  width: 19px;
-  height: 19px;
+  width: 20px;
+  height: 20px;
   background: white;
   border-radius: 50%;
-  top: 3.5px;
+  top: 3px;
   left: 4px;
   transition: 0.28s;
 }
@@ -102,25 +109,25 @@ html, body {
   transform: translateX(28px);
 }
 
-/* ===== CHAT CONTAINER (GLASS) ===== */
+/* CHAT */
 .chat {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 24px 22px 110px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  backdrop-filter: blur(9px);
-  background: rgba(0, 0, 0, 0.35);
+  padding: 24px 22px 110px;
+  backdrop-filter: blur(4px); /* 🔥 reduced from 9px */
+  background: rgba(0, 0, 0, 0.15);
 }
 
-/* ===== MESSAGE ROWS ===== */
+/* MESSAGE */
 .msg-row {
   display: flex;
   width: 100%;
-  animation: fade .3s ease;
   gap: 12px;
+  animation: fade .3s ease;
 }
 .msg-row.user {
   justify-content: flex-end;
@@ -129,57 +136,37 @@ html, body {
   justify-content: flex-start;
 }
 
-/* ===== AVATAR GLOW ===== */
 .avatar {
   width: 44px;
   height: 44px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--accent);
-  box-shadow: 0 0 8px rgba(0,110,255,0.4);
 }
 
-/* ===== MESSAGE BUBBLES (Glass) ===== */
+/* CHAT BUBBLE */
 .bubble {
   max-width: 72%;
   padding: 12px 16px;
   font-size: 15px;
-  line-height: 1.45;
   border-radius: 18px 18px 0px 18px;
-  background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(0, 0, 0, 0.35);
   color: white;
-  white-space: pre-wrap;
+  border: 1px solid rgba(255,255,255,0.13);
 }
 .msg-row.user .bubble {
-  background: rgba(0,110,255,0.70);
+  background: rgba(0,110,255,0.75);
   border-radius: 18px 18px 18px 0px;
 }
 
-/* TIME */
-.time {
-  font-size: 12px;
-  opacity: .7;
-  margin-top: 5px;
-  text-align: right;
-}
-
-/* Chat images */
-.chat-img {
-  width: 240px;
-  margin-top: 8px;
-  border-radius: 12px;
-}
-
-/* ===== INPUT SECTION (GLASS) ===== */
+/* INPUT AREA */
 .input-area {
   display: flex;
   gap: 10px;
   padding: 14px 18px;
   align-items: flex-end;
-  backdrop-filter: blur(9px);
-  background: rgba(0, 0, 0, 0.42);
-  border-top: 1px solid rgba(255,255,255,0.11);
+  backdrop-filter: blur(5px);
+  background: rgba(0,0,0,0.18);
+  border-top: 1px solid rgba(255,255,255,0.12);
 }
 
 textarea {
@@ -188,15 +175,13 @@ textarea {
   border-radius: 12px;
   padding: 10px 14px;
   font-size: 15px;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.12);
   color: white;
-  max-height: 140px;
+  border: 1px solid rgba(255,255,255,0.25);
   outline: none;
 }
-textarea:focus { border-color: var(--accent); }
 
-/* send */
+/* Send */
 .send {
   background: var(--accent);
   border: none;
@@ -205,22 +190,4 @@ textarea:focus { border-color: var(--accent); }
   font-size: 19px;
   cursor: pointer;
   color: white;
-  transition: 0.2s;
-}
-.send:hover { opacity: .85; }
-
-/* Upload icon */
-.upload-btn input { display: none; }
-.upload-btn { font-size: 23px; cursor: pointer; }
-.preview { width: 52px; border-radius: 10px; }
-
-/* Fade animation */
-@keyframes fade {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* Typing bubble dots */
-.typing-dots span {
-  animation: blinkDots 1.3s infinite;
 }

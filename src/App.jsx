@@ -6,9 +6,9 @@ import "./theme.css";
 const API_URL = "https://chatppt-backend-production.up.railway.app/api/chat/";
 const LOCAL_KEY = "chatppt_chats_v1";
 
-// 🔊 audio object (auto-play on toggle)
-const toggleMusic = typeof Audio !== "undefined" ? new Audio("/switch.mp3") : null;
-if (toggleMusic) toggleMusic.volume = 0.65;
+// 🔊 audio object (fixed autoplay issue)
+const toggleMusic = new Audio("/media/switch.mp3");
+toggleMusic.volume = 0.9;
 
 export default function App() {
   const [messages, setMessages] = useState([]);
@@ -20,19 +20,23 @@ export default function App() {
   const [theme, setTheme] = useState("ambi"); // ambi | annyan
   const chatEndRef = useRef(null);
 
+  // Load saved chats
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
   }, []);
 
+  // Save messages
   useEffect(() => {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
   }, [messages]);
 
+  // Scroll bottom when messages come
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typingMessage]);
 
+  // Auto expand textbox
   useEffect(() => {
     const t = document.getElementById("chatbox");
     if (t) {
@@ -108,10 +112,14 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
+  // 🔥 background theme switch + audio
   const handleTheme = () => {
-    const newTheme = theme === "ambi" ? "annyan" : "ambi";
-    setTheme(newTheme);
-    if (toggleMusic) toggleMusic.play(); // 🔥 audio on switch
+    const next = theme === "ambi" ? "annyan" : "ambi";
+    setTheme(next);
+
+    // Chrome autoplay unlock
+    toggleMusic.currentTime = 0;
+    toggleMusic.play().catch(() => {});
   };
 
   return (
