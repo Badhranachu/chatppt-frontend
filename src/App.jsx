@@ -6,6 +6,10 @@ import "./theme.css";
 const API_URL = "https://chatppt-backend-production.up.railway.app/api/chat/";
 const LOCAL_KEY = "chatppt_chats_v1";
 
+// 🔊 audio object (auto-play on toggle)
+const toggleMusic = typeof Audio !== "undefined" ? new Audio("/switch.mp3") : null;
+if (toggleMusic) toggleMusic.volume = 0.65;
+
 export default function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -13,7 +17,7 @@ export default function App() {
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [typingMessage, setTypingMessage] = useState("");
-  const [showToggleMsg, setShowToggleMsg] = useState(false);
+  const [theme, setTheme] = useState("ambi"); // ambi | annyan
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -56,8 +60,7 @@ export default function App() {
     setImageBase64(null);
     setLoading(true);
 
-    const recentContext = messages
-      .slice(-5)
+    const recentContext = messages.slice(-5)
       .map((m) => `${m.role}: ${m.content}`)
       .join("\n");
 
@@ -79,8 +82,6 @@ export default function App() {
     setLoading(false);
     setTypingMessage("");
     let i = 0;
-    const speed = 17;
-
     const interval = setInterval(() => {
       setTypingMessage((prev) => prev + text.charAt(i));
       i++;
@@ -92,7 +93,7 @@ export default function App() {
         ]);
         setTypingMessage("");
       }
-    }, speed);
+    }, 17);
   };
 
   const handleUpload = (e) => {
@@ -107,48 +108,38 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
-  const showToggleWarning = () => {
-    setShowToggleMsg(true);
-    setTimeout(() => setShowToggleMsg(false), 3000);
+  const handleTheme = () => {
+    const newTheme = theme === "ambi" ? "annyan" : "ambi";
+    setTheme(newTheme);
+    if (toggleMusic) toggleMusic.play(); // 🔥 audio on switch
   };
 
   return (
-    <div className="app">
+    <div className={`app ${theme}`}>
       <header className="header">
         <div className="title">ChatPPT 🤖 Serious AI</div>
 
         <div className="theme-switch">
-          <label>Cool🧊</label>
+          <span className="side-label">Ambi</span>
           <label className="switch">
-            <input type="checkbox" onClick={showToggleWarning} />
+            <input type="checkbox" onChange={handleTheme} checked={theme === "annyan"} />
             <span className="slider"></span>
           </label>
-          <label>Hans❤️‍🩹</label>
+          <span className="side-label">Annayan</span>
         </div>
       </header>
-
-      {showToggleMsg && (
-        <div className="toggle-cloud">
-          ⚠ Under construction — don’t play with this
-        </div>
-      )}
 
       <div className="chat">
         {messages.map((m, idx) => (
           <div key={idx} className={`msg-row ${m.role}`}>
             <img
               className="avatar"
-              src={m.role === "user" ? "/media/nakul.jpeg" : "/media/sathyan.jpeg"}
+              src={m.role === "user" ? "/media/annyan.jpeg" : "/media/ambi.jpeg"}
               alt=""
             />
             <div className="bubble">
               <div className="text">{m.content}</div>
-              {m.image && (
-                <img
-                  src={`data:image/png;base64,${m.image}`}
-                  className="chat-img"
-                />
-              )}
+              {m.image && <img src={`data:image/png;base64,${m.image}`} className="chat-img" />}
               <div className="time">{m.time}</div>
             </div>
           </div>
@@ -156,7 +147,7 @@ export default function App() {
 
         {loading && typingMessage === "" && (
           <div className="msg-row assistant">
-            <img className="avatar" src="/media/sathyan.jpeg" alt="" />
+            <img className="avatar" src="/media/ambi.jpeg" alt="" />
             <div className="typing-dots">
               <span></span><span></span><span></span>
             </div>
@@ -165,7 +156,7 @@ export default function App() {
 
         {typingMessage && (
           <div className="msg-row assistant">
-            <img className="avatar" src="/media/sathyan.jpeg" alt="" />
+            <img className="avatar" src="/media/ambi.jpeg" alt="" />
             <div className="bubble">
               {typingMessage}
               <span className="cursor"></span>
