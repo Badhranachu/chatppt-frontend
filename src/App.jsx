@@ -4,7 +4,7 @@ import "./App.css";
 import "./theme.css";
 
 const API_URL = "https://chatppt-backend-production.up.railway.app/api/chat/";
-const LOCAL_KEY = "chatppt_chats_v1";
+const LOCAL_KEY = "chatppt_chats_v2";
 
 export default function App() {
   const [messages, setMessages] = useState([]);
@@ -12,50 +12,36 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [typingMessage, setTypingMessage] = useState("");
   const [theme, setTheme] = useState("ambi");
-  const [loaded, setLoaded] = useState(false);   // ⬅ NEW (loader screen)
+  const [loaded, setLoaded] = useState(false);
   const chatEndRef = useRef(null);
 
-  // Audio refs
   const ambiRef = useRef(new Audio("/media/ambi.mp3"));
   const annyanRef = useRef(new Audio("/media/annyan.mp3"));
 
-  /* ================= PRELOAD EVERYTHING FIRST ================= */
+  /* ================= PRELOAD ================= */
   useEffect(() => {
-    const bgImgs = [
+    const imgs = [
       "/media/ambi.jpeg",
       "/media/annyan.jpeg",
       "/media/ambi-lap.png",
       "/media/annyan-lap.png",
       "/media/ambi-toggle.jpg",
       "/media/annyan-toggle.jpg",
-      "/media/ambi.jpeg",
-      "/media/annyan.jpeg",
     ];
-
-    const loadImage = src =>
-      new Promise(resolve => {
-        const img = new Image();
-        img.src = src;
-        img.onload = resolve;
-      });
-
-    const loadAudio = src =>
-      new Promise(resolve => {
-        const audio = new Audio(src);
-        audio.oncanplaythrough = resolve;
-      });
+    const loadImg = (src) => new Promise((r) => { const i = new Image(); i.src = src; i.onload = r; });
+    const loadAudio = (src) => new Promise((r) => { const a = new Audio(src); a.oncanplaythrough = r; });
 
     Promise.all([
-      ...bgImgs.map(loadImage),
+      ...imgs.map(loadImg),
       loadAudio("/media/ambi.mp3"),
       loadAudio("/media/annyan.mp3"),
     ]).then(() => setLoaded(true));
   }, []);
 
-  /* ================= UNLOCK SOUND AFTER FIRST CLICK ================= */
+  /* ================= UNLOCK AUDIO ================= */
   useEffect(() => {
     const unlock = () => {
-      [ambiRef.current, annyanRef.current].forEach(a => {
+      [ambiRef.current, annyanRef.current].forEach((a) => {
         a.play().catch(() => {});
         a.pause();
         a.currentTime = 0;
@@ -65,23 +51,14 @@ export default function App() {
     window.addEventListener("click", unlock);
   }, []);
 
-  /* ================= PLAY AMBI ON FIRST LOAD ================= */
+  /* ================= DEFAULT AMBI PLAY ================= */
   useEffect(() => {
     if (!loaded) return;
-    ambiRef.current.loop = false;
     ambiRef.current.currentTime = 0;
     ambiRef.current.play().catch(() => {});
   }, [loaded]);
 
-  // Stop music when closing tab
-  useEffect(() => {
-    return () => {
-      ambiRef.current.pause();
-      annyanRef.current.pause();
-    };
-  }, []);
-
-  // Load / Save Chat
+  /* ================= LOAD HISTORY ================= */
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_KEY);
     if (saved) setMessages(JSON.parse(saved));
@@ -91,7 +68,7 @@ export default function App() {
     localStorage.setItem(LOCAL_KEY, JSON.stringify(messages));
   }, [messages]);
 
-  // Auto scroll bottom
+  /* ================= AUTO SCROLL ================= */
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typingMessage]);
@@ -99,61 +76,69 @@ export default function App() {
   const timeNow = () =>
     new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
+  /* ================= SEND MESSAGE ================= */
   const sendMessage = async () => {
     if (!input.trim()) return;
-
-    const newMsg = { role: "user", content: input, time: timeNow() };
-    setMessages(p => [...p, newMsg]);
+    const newMsg = { role: "user", content: input, time: timeNow(), theme };
+    setMessages((p) => [...p, newMsg]);
     setInput("");
     setLoading(true);
 
-    const ctx = messages.slice(-5).map(m => `${m.role}: ${m.content}`).join("\n");
-
     try {
-      const res = await axios.post(API_URL, { message: newMsg.content, context: ctx });
-      typeBotMessage(res.data.answer);
+      const res = await axios.post(API_URL, {
+        message: newMsg.content,
+        theme,
+        history: messages
+      });
+      typeBotMessage(res.data.answer, res.data.theme);
     } catch {
-      typeBotMessage("⚠ Something went wrong — try again.");
+      typeBotMessage("⚠ Something went wrong — try again.", theme);
       setLoading(false);
     }
   };
 
-  const typeBotMessage = (text) => {
+  /* ================= TYPING ANIMATION (Fixed) ================= */
+  const typeBotMessage = (text, msgTheme) => {
+    const clean = text.replace(/^\n+/, ""); // remove hidden newlines
     setTypingMessage("");
     let i = 0;
+
     const interval = setInterval(() => {
-      setTypingMessage(p => p + text.charAt(i));
+      setTypingMessage((prev) => prev + clean.charAt(i));
       i++;
-      if (i === text.length) {
+      if (i >= clean.length) {
         clearInterval(interval);
         setTypingMessage("");
-        setMessages(p => [...p, { role: "assistant", content: text, time: timeNow() }]);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: clean, time: timeNow(), theme: msgTheme },
+        ]);
         setLoading(false);
       }
-    }, 17);
+    }, 18);
   };
 
-  // Toggle theme
+  /* ================= THEME SWITCH ================= */
   const handleTheme = () => {
     const ambi = ambiRef.current;
-    const annyan = annyanRef.current;
+    const ann = annyanRef.current;
 
     if (theme === "ambi") {
       ambi.pause();
       ambi.currentTime = 0;
-      annyan.currentTime = 0;
-      annyan.play().catch(() => {});
+      ann.currentTime = 0;
+      ann.play().catch(() => {});
       setTheme("annyan");
     } else {
-      annyan.pause();
-      annyan.currentTime = 0;
+      ann.pause();
+      ann.currentTime = 0;
       ambi.currentTime = 0;
       ambi.play().catch(() => {});
       setTheme("ambi");
     }
   };
 
-  /* =============== SHOW LOADER WHILE PRELOADING =============== */
+  /* ================= LOADING SCREEN ================= */
   if (!loaded) {
     return (
       <div className="loader-screen">
@@ -163,6 +148,7 @@ export default function App() {
     );
   }
 
+  /* ================= UI ================= */
   return (
     <div className={`app ${theme}`}>
       {/* HEADER */}
@@ -174,7 +160,7 @@ export default function App() {
         <div className="theme-switch">
           <img src="/media/ambi-toggle.jpg" className="toggle-icon left" alt="" />
           <label className="switch">
-            <input type="checkbox" onChange={handleTheme} checked={theme === "annyan"} />
+            <input type="checkbox" checked={theme === "annyan"} onChange={handleTheme} />
             <span className="slider"></span>
           </label>
           <img src="/media/annyan-toggle.jpg" className="toggle-icon right" alt="" />
@@ -183,9 +169,13 @@ export default function App() {
 
       {/* CHAT */}
       <div className="chat">
-        {messages.map((m, idx) => (
-          <div key={idx} className={`msg-row ${m.role}`}>
-            <img className="avatar" src={m.role === "user" ? "/media/annyan.jpeg" : "/media/ambi.jpeg"} alt="" />
+        {messages.map((m, i) => (
+          <div key={i} className={`msg-row ${m.role}`}>
+            <img
+              className="avatar"
+              src={m.theme === "ambi" ? "/media/ambi.jpeg" : "/media/annyan.jpeg"}
+              alt=""
+            />
             <div className="bubble">
               <div>{m.content}</div>
               <div className="time">{m.time}</div>
@@ -193,18 +183,22 @@ export default function App() {
           </div>
         ))}
 
+        {/* TYPING BUBBLE */}
         {typingMessage && (
           <div className="msg-row assistant">
-            <img className="avatar" src="/media/ambi.jpeg" alt="" />
-            <div className="bubble">
-              {typingMessage}
-            </div>
+            <img
+              className="avatar"
+              src={theme === "ambi" ? "/media/ambi.jpeg" : "/media/annyan.jpeg"}
+              alt=""
+            />
+            <div className="bubble typing-cursor">{typingMessage}</div>
           </div>
         )}
+
         <div ref={chatEndRef}></div>
       </div>
 
-      {/* INPUT BAR */}
+      {/* INPUT */}
       <div className="input-area">
         <label className="upload-btn">📎</label>
         <textarea

@@ -298,3 +298,19 @@ textarea {
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+
+.msg-row.assistant {
+  justify-content: flex-start;
+}
+
+
+.typing-cursor::after {
+  content: "▌";
+  animation: blink 0.7s infinite;
+  margin-left: 3px;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
